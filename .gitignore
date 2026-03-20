@@ -1,0 +1,46 @@
+# Byte-compiled / Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Python dotenv / environment files
+.env
+.env.*
+
+# Logs
+*.log
+*.tmp
+
+# IDE / editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Luffa / Node frontend artifacts (if you add frontend later)
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+/dist
+/build
+
+# Civic / credentials (do not commit keys)
+*.key
+*.pem
+*.json
