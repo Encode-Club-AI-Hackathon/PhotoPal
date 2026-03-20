@@ -46,4 +46,4 @@ yarn-debug.log
 *.json
 
 # Database
-database/photopal.db
+backend/database/photopal.db
