@@ -45,7 +45,7 @@ Return a JSON object with these fields:
         },
         {
           role: 'user',
-          content: `Analyse this photographer portfolio content and extract profile information:\n\n${portfolioContent}`,
+          content: `Analyze this photographer portfolio content and extract profile information:\n\n${portfolioContent}`,
         },
       ],
     })
@@ -57,7 +57,7 @@ Return a JSON object with these fields:
   } catch (err) {
     console.error('[analyze]', err)
     return NextResponse.json(
-      { error: 'Failed to analyse portfolio' },
+      { error: 'Failed to analyze portfolio' },
       { status: 500 },
     )
   }

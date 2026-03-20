@@ -198,7 +198,7 @@ export default function OnboardingPage() {
             <CardTitle>Enter Your Portfolio URL</CardTitle>
             <CardDescription>
               Paste the link to your photography portfolio website. Our AI will
-              analyse it and fill in your profile automatically.
+              analyze it and fill in your profile automatically.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
                 ) : (
                   <ChevronRight className="h-4 w-4" />
                 )}
-                Analyse My Portfolio
+                Analyze My Portfolio
               </Button>
             </form>
           </CardContent>
@@ -240,7 +240,7 @@ export default function OnboardingPage() {
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-semibold">Analysing your portfolio…</h3>
+              <h3 className="text-lg font-semibold">Analyzing your portfolio…</h3>
               <p className="text-sm text-muted-foreground">
                 Our AI is reading your portfolio and extracting your photography
                 style, specialties, and experience. This takes about 15 seconds.

@@ -45,7 +45,7 @@ export default function HomePage() {
             <span className="text-primary">Photography Clients</span>
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground">
-            PhotoPal analyses your portfolio, discovers nearby businesses that
+            PhotoPal analyzes your portfolio, discovers nearby businesses that
             need a photographer, and generates personalised cold outreach emails
             – all in minutes.
           </p>

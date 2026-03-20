@@ -107,7 +107,7 @@ Given a photographer profile and a business, return a JSON object with:
   } catch (err) {
     console.error('[POST /api/businesses/[id]/analyze]', err)
     return NextResponse.json(
-      { error: 'Failed to analyse business' },
+      { error: 'Failed to analyze business' },
       { status: 500 },
     )
   }
