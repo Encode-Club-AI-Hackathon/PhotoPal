@@ -16,6 +16,8 @@ from langchain_core.tools import tool
 # Import Pydantic for structured output
 from pydantic import BaseModel, Field
 
+from supabase import create_client, Client
+
 # Load Env
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -23,6 +25,10 @@ load_dotenv(dotenv_path=env_path)
 civic_token = os.getenv("CIVIC_TOKEN")
 civic_url = os.getenv("CIVIC_URL")
 google_api_key = os.getenv("GOOGLE_API_KEY")
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+
+supabase: Client = create_client(supabase_url, supabase_key)
 
 # --- 1. Define your exact data structure ---
 class BusinessLead(BaseModel):
@@ -110,7 +116,7 @@ async def main():
     print("Agent is researching...")
     
     # Notice we updated the prompt to explicitly tell the agent about its new tool
-    prompt = """Search the web for businesses in exeter. Use the Photographer Lead Finder skill. 
+    prompt = """Search the web for businesses in exeter. Use the photographer-lead-finder skill. 
     Once you have compiled the leads, you MUST call the `submit_final_leads` tool to output your results."""
     
     result = await agent.ainvoke(
@@ -132,6 +138,12 @@ async def main():
     if structured_data:
         print("\n--- STRUCTURED JSON OUTPUT ---")
         print(json.dumps(structured_data, indent=2))
+
+        for lead in structured_data["leads"]:
+            print(f"Lat: {lead['lat']}, Lon: {lead['lon']} - {lead['business_name']} ({lead['type']})")
+        
+        supabase.table("businesses").insert(structured_data["leads"]).execute()
+        
     else:
         print("\nAgent didn't use the submit tool. Here is its raw response:")
         print(last_message.content)
