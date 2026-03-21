@@ -126,5 +126,12 @@ Page({
     wx.navigateTo({
       url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
     })
+  },
+  goToEditProfile: function () {
+    const profile = this.data.photographerProfile || {}
+    const encodedProfile = encodeURIComponent(JSON.stringify(profile))
+    wx.navigateTo({
+      url: `/pages/profile-intake/profile-intake?mode=edit&profile=${encodedProfile}`
+    })
   }
 })

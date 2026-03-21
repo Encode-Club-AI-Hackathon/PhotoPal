@@ -85,6 +85,7 @@ Page({
     step: 'initial',
     submitting: false,
     saving: false,
+    editMode: false,
     name: '',
     contactEmail: '',
     locationCity: '',
@@ -98,9 +99,25 @@ Page({
     studioAccess: false,
     agentProfileOriginal: null
   },
-  onLoad: function () {
+  onLoad: function (options) {
+    const editMode = options && options.mode === 'edit'
+    
+    if (editMode && options.profile) {
+      try {
+        const profile = JSON.parse(decodeURIComponent(options.profile))
+        this.populateEditForm(profile)
+      } catch (err) {
+        console.error('Failed to parse profile:', err)
+        this.resetForm()
+      }
+    } else {
+      this.resetForm()
+    }
+  },
+  resetForm: function () {
     this.setData({
       step: 'initial',
+      editMode: false,
       name: '',
       contactEmail: '',
       locationCity: '',
@@ -112,6 +129,24 @@ Page({
       humanPresence: false,
       willingToTravel: false,
       studioAccess: false,
+      agentProfileOriginal: null
+    })
+  },
+  populateEditForm: function (profile) {
+    this.setData({
+      step: 'confirm',
+      editMode: true,
+      name: profile.name || '',
+      contactEmail: profile.contactEmail || '',
+      locationCity: profile.locationCity || '',
+      locationCountry: profile.locationCountry || '',
+      instagramHandle: profile.instagramHandle || '',
+      portfolioUrl: profile.websiteUrl || '',
+      primaryNiche: profile.primaryNiche || '',
+      secondaryNiches: (Array.isArray(profile.secondaryNiches) ? profile.secondaryNiches : (profile.secondaryNiches || '').split(',')).filter(Boolean).join(', '),
+      humanPresence: (profile.humanPresence === 'Yes' || profile.humanPresence === true),
+      willingToTravel: (profile.willingnessToTravel === 'Yes' || profile.willingnessToTravel === true),
+      studioAccess: (profile.studioAccess === 'Yes' || profile.studioAccess === true),
       agentProfileOriginal: null
     })
   },

@@ -1,10 +1,11 @@
 <view class="container profile-page">
   <view class="profile-card">
-    <text class="title">Complete Your Profile</text>
+    <text class="title">{{editMode ? 'Edit Your Profile' : 'Complete Your Profile'}}</text>
     <text class="subtitle" wx:if="{{step === 'initial'}}">Start with Instagram and portfolio. We will research the rest automatically.</text>
-    <text class="subtitle" wx:elif="{{step === 'confirm'}}">Review the auto-filled details from the analyzer and confirm.</text>
+    <text class="subtitle" wx:elif="{{step === 'confirm' && !editMode}}">Review the auto-filled details from the analyzer and confirm.</text>
+    <text class="subtitle" wx:elif="{{step === 'confirm' && editMode}}">Update your profile details and save changes.</text>
 
-    <block wx:if="{{step === 'initial'}}">
+    <block wx:if="{{step === 'initial' && !editMode}}">
       <view class="field">
         <text class="label">Instagram</text>
         <input class="input" placeholder="username (without @)" value="{{instagramHandle}}" bindinput="onInstagramInput" />
@@ -74,7 +75,7 @@
     </block>
 
     <button class="submit-btn" bindtap="onSubmit" loading="{{submitting || saving}}" disabled="{{submitting || saving}}">
-      {{step === 'initial' ? (submitting ? 'Analyzing...' : 'Analyze Portfolio') : (saving ? 'Saving...' : 'Confirm Details')}}
+      {{editMode ? (saving ? 'Saving...' : 'Save Changes') : (step === 'initial' ? (submitting ? 'Analyzing...' : 'Analyze Portfolio') : (saving ? 'Saving...' : 'Confirm Details'))}}
     </button>
   </view>
 </view>

@@ -19,6 +19,9 @@
     <view class="kv-row"><text class="kv-key">Willing to Travel</text><text class="kv-value">{{photographerProfile.willingnessToTravel || '-'}}</text></view>
     <view class="kv-row"><text class="kv-key">Studio Access</text><text class="kv-value">{{photographerProfile.studioAccess || '-'}}</text></view>
 
-    <button class="secondary-btn" wx:if="{{photographerProfile.websiteUrl}}" bindtap="openWebsite">Open Portfolio</button>
+    <view class="button-row">
+      <button class="button-half secondary-btn" wx:if="{{photographerProfile.websiteUrl}}" bindtap="openWebsite">Open Portfolio</button>
+      <button class="button-half primary-btn" bindtap="goToEditProfile">Edit Profile</button>
+    </view>
   </view>
 </view>
