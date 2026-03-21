@@ -1,0 +1,86 @@
+.profile-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 36rpx 28rpx;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, #fff8ef 0%, #f4f7ff 100%);
+}
+
+.profile-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 24rpx rgba(20, 28, 40, 0.08);
+  padding: 28rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #182033;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #4b5870;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.label {
+  font-size: 24rpx;
+  color: #26344d;
+  font-weight: 600;
+}
+
+.input {
+  height: 80rpx;
+  border: 2rpx solid #d7deec;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 26rpx;
+  color: #13294b;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 170rpx;
+  border: 2rpx solid #d7deec;
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  font-size: 26rpx;
+  color: #13294b;
+  background: #ffffff;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.switch-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border: 2rpx solid #d7deec;
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  background: #f8fbff;
+}
+
+.submit-btn {
+  margin: 8rpx 0 0;
+  width: 100%;
+  border-radius: 16rpx;
+  background: #13294b;
+  color: #ffffff;
+}

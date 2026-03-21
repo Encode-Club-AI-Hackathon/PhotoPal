@@ -38,6 +38,11 @@ class ProfileList(BaseModel):
 SUBMIT_TOOL_NAME = "submit_final_profiles"
 RESULTS_KEY = "profiles"
 TARGET_TABLE = "photographer_profiles"
+DISABLED_TOOL_NAMES = {
+	"mcp_civic_store-save",
+	"store-save",
+	"mcp_civic_store_save",
+}
 
 
 def build_prompt(website_url: str, instagram_handle: str | None = None) -> str:
@@ -70,6 +75,9 @@ async def create_agent():
 	)
 
 	mcp_tools = await client.get_tools()
+	# The store-save tool can fail in backend-triggered sessions with no active
+	# interactive connection context, causing avoidable 500s after analysis.
+	mcp_tools = [tool for tool in mcp_tools if getattr(tool, "name", "") not in DISABLED_TOOL_NAMES]
 	all_tools = mcp_tools + [submit_final_profiles]
 
 	model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview", temperature=0.2)

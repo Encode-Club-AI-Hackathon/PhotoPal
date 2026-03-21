@@ -2,6 +2,7 @@
     "pages": [
         "pages/index/index",
         "pages/settings/settings",
+        "pages/profile-intake/profile-intake",
         "pages/profile/profile",
         "pages/suggested-opportunities/suggested-opportunities",
         "pages/webview/webview"

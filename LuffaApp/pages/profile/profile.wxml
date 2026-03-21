@@ -1,42 +1,31 @@
 <view class="container page">
   <view class="hero-card">
-    <text class="title">Profile</text>
-    <text class="subtitle">Review your account details and permission status.</text>
-    <view class="action-row">
-      <button class="primary-btn" bindtap="getUserProfile" loading="{{loadingProfile}}">Fetch Profile</button>
-      <button class="secondary-btn" bindtap="openSettings">Permissions</button>
-    </view>
-    <button class="ghost-btn" bindtap="refreshAvailableInfo">Refresh</button>
+    <text class="title">My Photographer Profile</text>
+    <text class="subtitle">Synced from photographer_profiles using your wallet UID.</text>
+    <button class="primary-btn" bindtap="refreshProfileData" loading="{{loadingProfile}}" disabled="{{loadingProfile}}">Refresh Profile</button>
     <text class="error-text" wx:if="{{profileError}}">{{profileError}}</text>
   </view>
 
   <view class="card">
-    <text class="section-title">User Info</text>
-    <image wx:if="{{userInfo.avatarUrl}}" class="avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
-    <view class="kv-row"><text class="kv-key">Nickname</text><text class="kv-value">{{userInfo.nickName || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Language</text><text class="kv-value">{{userInfo.language || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Gender</text><text class="kv-value">{{userInfo.gender || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Country</text><text class="kv-value">{{userInfo.country || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Province</text><text class="kv-value">{{userInfo.province || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">City</text><text class="kv-value">{{userInfo.city || '-'}}</text></view>
+    <text class="section-title">Wallet</text>
+    <view class="kv-row"><text class="kv-key">Connected</text><text class="kv-value">{{walletConnected ? 'Yes' : 'No'}}</text></view>
+    <view class="kv-row"><text class="kv-key">UID</text><text class="kv-value">{{walletUid || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Address</text><text class="kv-value">{{walletAddress || '-'}}</text></view>
   </view>
 
-  <view class="card">
-    <text class="section-title">Session & Permissions</text>
-    <view class="kv-row"><text class="kv-key">Session</text><text class="kv-value">{{sessionStatus}}</text></view>
-    <view class="kv-row"><text class="kv-key">scope.userInfo</text><text class="kv-value">{{authSetting['scope.userInfo'] ? 'Granted' : 'Not granted'}}</text></view>
-    <view class="kv-row"><text class="kv-key">scope.userLocation</text><text class="kv-value">{{authSetting['scope.userLocation'] ? 'Granted' : 'Not granted'}}</text></view>
-  </view>
+  <view class="card" wx:if="{{hasPhotographerProfile && photographerProfile}}">
+    <text class="section-title">Photographer Details</text>
+    <view class="kv-row"><text class="kv-key">Name</text><text class="kv-value">{{photographerProfile.name || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Primary Niche</text><text class="kv-value">{{photographerProfile.primaryNiche || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Secondary Niches</text><text class="kv-value">{{photographerProfile.secondaryNiches || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Email</text><text class="kv-value">{{photographerProfile.contactEmail || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Instagram</text><text class="kv-value">{{photographerProfile.instagramHandle || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">City</text><text class="kv-value">{{photographerProfile.locationCity || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Country</text><text class="kv-value">{{photographerProfile.locationCountry || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Human Presence</text><text class="kv-value">{{photographerProfile.humanPresence || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Willing to Travel</text><text class="kv-value">{{photographerProfile.willingnessToTravel || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Studio Access</text><text class="kv-value">{{photographerProfile.studioAccess || '-'}}</text></view>
 
-  <view class="card">
-    <text class="section-title">Mini Program Account</text>
-    <view class="kv-row"><text class="kv-key">App ID</text><text class="kv-value">{{accountInfo.appId || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Environment</text><text class="kv-value">{{accountInfo.envVersion || '-'}}</text></view>
-    <view class="kv-row"><text class="kv-key">Version</text><text class="kv-value">{{accountInfo.version || '-'}}</text></view>
-  </view>
-
-  <view class="card" wx:if="{{rawProfile}}">
-    <text class="section-title">Raw Profile Payload</text>
-    <text class="raw-json">{{rawProfile}}</text>
+    <button class="secondary-btn" wx:if="{{photographerProfile.websiteUrl}}" bindtap="openWebsite">Open Portfolio</button>
   </view>
 </view>
