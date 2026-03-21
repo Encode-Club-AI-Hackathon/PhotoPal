@@ -158,7 +158,7 @@ async def run_portfolio_analyser(website_url: str, instagram_handle: str | None,
 
 	def portfolio_row_transform(row: dict[str, Any]) -> dict[str, Any]:
 		if uid:
-			row["uid"] = uid
+			row["photographer_id"] = uid
 		return row
 
 	return await run_and_store(
