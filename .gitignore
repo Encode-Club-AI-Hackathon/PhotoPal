@@ -17,6 +17,8 @@ dist/
 # Python dotenv / environment files
 .env
 .env.*
+LuffaApp/.env
+LuffaApp/.env.*
 
 # Logs
 *.log
@@ -47,3 +49,4 @@ yarn-debug.log
 
 # Database
 backend/database/photopal.db
+

@@ -1,6 +1,42 @@
 <view class="container page">
-  <view class="card">
+  <view class="hero-card">
     <text class="title">Profile</text>
-    <text class="subtitle">This page is ready for your profile content.</text>
+    <text class="subtitle">Review your account details and permission status.</text>
+    <view class="action-row">
+      <button class="primary-btn" bindtap="getUserProfile" loading="{{loadingProfile}}">Fetch Profile</button>
+      <button class="secondary-btn" bindtap="openSettings">Permissions</button>
+    </view>
+    <button class="ghost-btn" bindtap="refreshAvailableInfo">Refresh</button>
+    <text class="error-text" wx:if="{{profileError}}">{{profileError}}</text>
+  </view>
+
+  <view class="card">
+    <text class="section-title">User Info</text>
+    <image wx:if="{{userInfo.avatarUrl}}" class="avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+    <view class="kv-row"><text class="kv-key">Nickname</text><text class="kv-value">{{userInfo.nickName || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Language</text><text class="kv-value">{{userInfo.language || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Gender</text><text class="kv-value">{{userInfo.gender || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Country</text><text class="kv-value">{{userInfo.country || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Province</text><text class="kv-value">{{userInfo.province || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">City</text><text class="kv-value">{{userInfo.city || '-'}}</text></view>
+  </view>
+
+  <view class="card">
+    <text class="section-title">Session & Permissions</text>
+    <view class="kv-row"><text class="kv-key">Session</text><text class="kv-value">{{sessionStatus}}</text></view>
+    <view class="kv-row"><text class="kv-key">scope.userInfo</text><text class="kv-value">{{authSetting['scope.userInfo'] ? 'Granted' : 'Not granted'}}</text></view>
+    <view class="kv-row"><text class="kv-key">scope.userLocation</text><text class="kv-value">{{authSetting['scope.userLocation'] ? 'Granted' : 'Not granted'}}</text></view>
+  </view>
+
+  <view class="card">
+    <text class="section-title">Mini Program Account</text>
+    <view class="kv-row"><text class="kv-key">App ID</text><text class="kv-value">{{accountInfo.appId || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Environment</text><text class="kv-value">{{accountInfo.envVersion || '-'}}</text></view>
+    <view class="kv-row"><text class="kv-key">Version</text><text class="kv-value">{{accountInfo.version || '-'}}</text></view>
+  </view>
+
+  <view class="card" wx:if="{{rawProfile}}">
+    <text class="section-title">Raw Profile Payload</text>
+    <text class="raw-json">{{rawProfile}}</text>
   </view>
 </view>
