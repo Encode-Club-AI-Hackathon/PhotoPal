@@ -30,6 +30,11 @@
       </view>
       <text class="settings-row-chevron">›</text>
     </button>
+
+    <button class="secondary-btn" wx:if="{{walletConnected && !hasPhotographerProfile && !checkingProfile}}" bindtap="goToProfileIntake">Complete Profile for Analysis</button>
+
+    <button class="secondary-btn" wx:if="{{walletConnected && hasPhotographerProfile}}" bindtap="goToProfile">View My Profile</button>
+
     <button class="secondary-btn" wx:if="{{walletConnected}}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
   </view>
 </view>

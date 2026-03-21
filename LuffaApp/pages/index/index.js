@@ -3,6 +3,7 @@ const app = getApp()
 const luffa = require('../../utils/luffa')
 const { defaultIcon } = require('../../utils/icon')
 const { defaultSettingsIcon } = require('../../utils/settings_icon')
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = require('../../config/supabase')
 
 function buildWalletFromPayload(payload) {
   const data = payload || {}
@@ -24,7 +25,9 @@ Page({
     settingsIcon: defaultSettingsIcon,
     tickIcon: defaultIcon,
     connectingWallet: false,
+    checkingProfile: false,
     walletConnected: false,
+    hasPhotographerProfile: false,
     walletAddress: '',
     walletNickname: '',
     walletUid: '',
@@ -56,17 +59,57 @@ Page({
         walletCid: wallet.cid || ''
       })
       this.updateDisplayName()
+      this.checkPhotographerProfile(wallet.uid || '')
       return
     }
 
     this.setData({
       walletConnected: false,
+      hasPhotographerProfile: false,
+      checkingProfile: false,
       walletAddress: '',
       walletNickname: '',
       walletUid: '',
       walletCid: ''
     })
     this.updateDisplayName()
+  },
+  checkPhotographerProfile: function (uid, onDone) {
+    const finish = (exists) => {
+      this.setData({
+        hasPhotographerProfile: !!exists,
+        checkingProfile: false
+      })
+      if (typeof onDone === 'function') onDone(!!exists)
+    }
+
+    if (!uid) {
+      finish(false)
+      return
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_URL.includes('supabase.co')) {
+      finish(false)
+      return
+    }
+
+    this.setData({ checkingProfile: true })
+
+    wx.request({
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?uid=eq.${encodeURIComponent(uid)}&select=uid&limit=1`,
+      method: 'GET',
+      header: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      success: (res) => {
+        const exists = Array.isArray(res.data) && res.data.length > 0
+        finish(exists)
+      },
+      fail: () => {
+        finish(false)
+      }
+    })
   },
   onConnectWallet: function () {
     if (this.data.connectingWallet || this.data.walletConnected) {
@@ -88,6 +131,15 @@ Page({
       this.setData({ connectingWallet: false })
       this.syncWalletState()
       wx.showToast({ title: 'Wallet connected', icon: 'success' })
+
+      this.checkPhotographerProfile(wallet.uid || '', (exists) => {
+        if (exists) return
+        setTimeout(() => {
+          wx.navigateTo({
+            url: '../profile-intake/profile-intake'
+          })
+        }, 350)
+      })
     }).catch((err) => {
       console.error('Connect wallet failed:', err)
       this.setData({ connectingWallet: false })
@@ -107,6 +159,26 @@ Page({
 
     wx.navigateTo({
       url: '../suggested-opportunities/suggested-opportunities'
+    })
+  },
+  goToProfileIntake: function () {
+    if (!this.data.walletConnected) {
+      wx.showToast({ title: 'Connect wallet first', icon: 'none' })
+      return
+    }
+
+    wx.navigateTo({
+      url: '../profile-intake/profile-intake'
+    })
+  },
+  goToProfile: function () {
+    if (!this.data.walletConnected) {
+      wx.showToast({ title: 'Connect wallet first', icon: 'none' })
+      return
+    }
+
+    wx.navigateTo({
+      url: '../profile/profile'
     })
   }
 })
