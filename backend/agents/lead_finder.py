@@ -1,8 +1,4 @@
-import asyncio
 import os
-import json
-from pathlib import Path
-from dotenv import load_dotenv
 from typing import List, Optional
 
 # Correct imports
@@ -12,23 +8,18 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool
+# from civic_mcp_client import CivicMCPClient
+# from civic_mcp_client.adapters.langchain import execute_langchain_tool_call, langchain
 
 # Import Pydantic for structured output
 from pydantic import BaseModel, Field
 
-from supabase import create_client, Client
-
-# Load Env
-env_path = Path(__file__).resolve().parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+import logging
 
 civic_token = os.getenv("CIVIC_TOKEN")
 civic_url = os.getenv("CIVIC_URL")
-google_api_key = os.getenv("GOOGLE_API_KEY")
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
 
-supabase: Client = create_client(supabase_url, supabase_key)
+logging.getLogger("langchain_google_genai").setLevel(logging.ERROR)
 
 # --- 1. Define your exact data structure ---
 class BusinessLead(BaseModel):
@@ -45,16 +36,28 @@ class BusinessLead(BaseModel):
 class LeadList(BaseModel):
     leads: List[BusinessLead] = Field(description="A list of business leads found during the search")
 
+
+LEAD_FINDER_PROMPT = (
+    "Search the web for businesses in exeter. Use the photographer-lead-finder skill. "
+    "Once you have compiled the leads, you MUST call the `submit_final_leads` tool to output your results."
+)
+SUBMIT_TOOL_NAME = "submit_final_leads"
+RESULTS_KEY = "leads"
+TARGET_TABLE = "businesses"
+
 # --- 2. Create the Submit Tool ---
 @tool(args_schema=LeadList)
 def submit_final_leads(leads: List[BusinessLead]):
     """Use this tool ONLY when your research is complete to submit the final structured list of business leads."""
     # We actually don't need this function to do anything. 
     # LangGraph will intercept the call before it executes!
-    pass
+    return leads
 
 
 async def create_agent():
+    if not civic_url or not civic_token:
+        raise ValueError("Missing CIVIC_URL or CIVIC_TOKEN in environment.")
+
     # Setup MCP Client
     client = MultiServerMCPClient({
         "civic-nexus": {
@@ -64,7 +67,13 @@ async def create_agent():
         }
     })
     
+    # client = CivicMCPClient(
+    #     auth={"token": civic_token},
+    #     url=civic_url
+    # )
+    
     # Initialize Tools (MCP Tools + Our Custom Submit Tool)
+    # mcp_tools = await client.adapt_for(langchain())
     mcp_tools = await client.get_tools()
     all_tools = mcp_tools + [submit_final_leads]
     
@@ -86,7 +95,7 @@ async def create_agent():
             
         # Check WHICH tool the agent called
         for tool_call in last_message.tool_calls:
-            if tool_call["name"] == "submit_final_leads":
+            if tool_call["name"] == SUBMIT_TOOL_NAME:
                 # The agent is done and submitting the data. Stop the graph!
                 return END
                 
@@ -107,47 +116,3 @@ async def create_agent():
     workflow.add_edge("tools", "agent")
     
     return workflow.compile(checkpointer=MemorySaver())
-
-
-async def main():
-    agent = await create_agent()
-    config = {"configurable": {"thread_id": "session-1"}}
-
-    print("Agent is researching...")
-    
-    # Notice we updated the prompt to explicitly tell the agent about its new tool
-    prompt = """Search the web for businesses in exeter. Use the photographer-lead-finder skill. 
-    Once you have compiled the leads, you MUST call the `submit_final_leads` tool to output your results."""
-    
-    result = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": prompt}]},
-        config=config
-    )
-    
-    # --- 4. Extract the cleanly formatted data ---
-    last_message = result["messages"][-1]
-    structured_data = None
-    
-    if getattr(last_message, "tool_calls", None):
-        for tc in last_message.tool_calls:
-            if tc["name"] == "submit_final_leads":
-                # The tool arguments ARE our perfect JSON dictionary
-                structured_data = tc["args"]
-                break
-
-    if structured_data:
-        print("\n--- STRUCTURED JSON OUTPUT ---")
-        print(json.dumps(structured_data, indent=2))
-
-        for lead in structured_data["leads"]:
-            print(f"Lat: {lead['lat']}, Lon: {lead['lon']} - {lead['business_name']} ({lead['type']})")
-        
-        supabase.table("businesses").insert(structured_data["leads"]).execute()
-        
-    else:
-        print("\nAgent didn't use the submit tool. Here is its raw response:")
-        print(last_message.content)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
