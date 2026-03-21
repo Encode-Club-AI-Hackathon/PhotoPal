@@ -1,10 +1,11 @@
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from agents.main import run_portfolio_analyser
+from api.routes.auth_utils import extract_bearer_token
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class PortfolioAnalyserRequest(BaseModel):
 
 
 @router.post("/portfolio-analyser")
-async def portfolio_analyser_route(payload: PortfolioAnalyserRequest):
+async def portfolio_analyser_route(payload: PortfolioAnalyserRequest, civic_access_token: str | None = Depends(extract_bearer_token)):
     try:
         print(f"\n{'='*60}")
         print(f"portfolio_analyser_route called")
@@ -28,7 +29,12 @@ async def portfolio_analyser_route(payload: PortfolioAnalyserRequest):
         print(f"  photographer_id: {payload.photographer_id}")
         print(f"{'='*60}\n")
         
-        result = await run_portfolio_analyser(payload.website_url, payload.instagram_handle, payload.photographer_id)
+        result = await run_portfolio_analyser(
+            payload.website_url,
+            payload.instagram_handle,
+            payload.photographer_id,
+            civic_access_token=civic_access_token,
+        )
         
         print(f"\n{'='*60}")
         print(f"run_portfolio_analyser completed successfully")

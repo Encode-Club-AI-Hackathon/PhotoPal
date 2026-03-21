@@ -74,8 +74,10 @@ def submit_final_outreach_drafts(outreach_drafts: List[OutreachDraft]):
     return outreach_drafts
 
 
-async def create_agent():
-    if not civic_url or not civic_token:
+async def create_agent(civic_access_token: str | None = None):
+    active_token = civic_access_token or civic_token
+
+    if not civic_url or not active_token:
         raise ValueError("Missing CIVIC_URL or CIVIC_TOKEN in environment.")
 
     client = MultiServerMCPClient(
@@ -83,7 +85,7 @@ async def create_agent():
             "civic-nexus": {
                 "transport": "streamable_http",
                 "url": civic_url,
-                "headers": {"Authorization": f"Bearer {civic_token}"},
+                "headers": {"Authorization": f"Bearer {active_token}"},
             }
         }
     )

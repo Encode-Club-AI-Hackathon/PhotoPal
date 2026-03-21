@@ -5,13 +5,15 @@ from threading import Lock
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from api.routes.business_outreach import router as business_outreach_router
+from api.routes.gmail_recent_subjects import router as gmail_recent_subjects_router
 from api.routes.lead_finder import router as lead_finder_router
 from api.routes.portfolio_analyser import router as portfolio_analyser_router
-from civic_auth.integrations.fastapi import Depends, create_auth_router, create_auth_dependencies
+from civic_auth import CivicAuth
+from civic_auth.integrations.fastapi import FastAPICookieStorage, create_auth_dependencies
 
 from agents.main import set_single_row
 
@@ -24,6 +26,35 @@ DEVICE_SESSION_TTL_SEC = int(os.getenv("DEVICE_SESSION_TTL_SEC", "600"))
 DEVICE_POLL_INTERVAL_SEC = int(os.getenv("DEVICE_POLL_INTERVAL_SEC", "3"))
 DEVICE_SESSION_COOKIE = "device_session_id"
 
+
+def _parse_scopes(raw: str | None, default: list[str]) -> list[str]:
+    if not raw:
+        return default
+    normalized = raw.replace(",", " ").split()
+    return [scope.strip() for scope in normalized if scope.strip()]
+
+
+DEFAULT_SCOPES = [
+    "openid",
+    "email",
+    "profile",
+    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.action",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.metadata",
+    "https://www.googleapis.com/auth/gmail.insert",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/gmail.settings.basic",
+    "https://www.googleapis.com/auth/gmail.settings.sharing",
+]
+CIVIC_SCOPES = _parse_scopes(os.getenv("CIVIC_SCOPES"), DEFAULT_SCOPES)
+
 app = FastAPI(title="PhotoPal Agent API")
 config = {
     "client_id": CLIENT_ID,  # Get this from auth.civic.com
@@ -31,13 +62,48 @@ config = {
     or (f"{PUBLIC_BASE_URL}/auth/callback" if PUBLIC_BASE_URL else "http://localhost:8000/auth/callback"),
     "post_logout_redirect_url": CIVIC_POST_LOGOUT_REDIRECT_URL
     or (f"{PUBLIC_BASE_URL}/" if PUBLIC_BASE_URL else "http://localhost:8000/"),
+    "scopes": CIVIC_SCOPES,
 }
-app.include_router(create_auth_router(config))
 app.include_router(lead_finder_router)
 app.include_router(portfolio_analyser_router)
 app.include_router(business_outreach_router)
+app.include_router(gmail_recent_subjects_router)
 
 civic_auth_dep, get_current_user, require_auth = create_auth_dependencies(config)
+
+
+@app.get("/auth/login")
+async def auth_login(request: Request):
+    redirect_response = RedirectResponse(url="/", status_code=302)
+    storage = FastAPICookieStorage(request, redirect_response)
+    civic_auth = CivicAuth(storage, config)
+    url = await civic_auth.build_login_url(scopes=config.get("scopes"))
+    redirect_response.headers["location"] = url
+    return redirect_response
+
+
+@app.get("/auth/callback")
+async def auth_callback(code: str, state: str, request: Request):
+    redirect_response = RedirectResponse(url="/", status_code=302)
+    storage = FastAPICookieStorage(request, redirect_response)
+    civic_auth = CivicAuth(storage, config)
+    await civic_auth.resolve_oauth_access_code(code, state)
+    return redirect_response
+
+
+@app.get("/auth/logout")
+async def auth_logout(request: Request):
+    redirect_response = RedirectResponse(url="/", status_code=302)
+    storage = FastAPICookieStorage(request, redirect_response)
+    civic_auth = CivicAuth(storage, config)
+    url = await civic_auth.build_logout_redirect_url()
+    redirect_response.headers["location"] = url
+    return redirect_response
+
+
+@app.get("/auth/logoutcallback")
+async def auth_logout_callback(state: Optional[str] = None):
+    return RedirectResponse(url="/", status_code=302)
 
 # In-memory device sessions (good for hackathon/dev; move to Redis/DB for production)
 _device_sessions: Dict[str, Dict[str, Any]] = {}

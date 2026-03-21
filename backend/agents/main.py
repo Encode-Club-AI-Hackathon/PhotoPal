@@ -48,15 +48,16 @@ def set_single_row(table: str, key: str, value: Any, data: dict[str, Any]) -> di
 
 async def run_and_store(
 	*,
-	create_agent: Callable[[], Awaitable[Any]],
+	create_agent: Callable[..., Awaitable[Any]],
 	prompt: str,
 	submit_tool_name: str,
 	results_key: str,
 	target_table: str,
 	thread_id: str,
+	civic_access_token: str | None = None,
 	row_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-	agent = await create_agent()
+	agent = await create_agent(civic_access_token=civic_access_token)
 	config = {"configurable": {"thread_id": thread_id}}
 
 	print(f"Running agent for table '{target_table}'...")
@@ -119,7 +120,7 @@ async def run_and_store(
 	}
 
 
-async def run_lead_finder(profile_id: int) -> dict[str, Any]:
+async def run_lead_finder(profile_id: int, civic_access_token: str | None = None) -> dict[str, Any]:
 	try:
 		from .lead_finder import (
 			create_agent,
@@ -147,10 +148,16 @@ async def run_lead_finder(profile_id: int) -> dict[str, Any]:
 		results_key=RESULTS_KEY,
 		target_table=TARGET_TABLE,
 		thread_id=f"lead-finder-session-{profile_id}",
+		civic_access_token=civic_access_token,
 	)
 
 
-async def run_portfolio_analyser(website_url: str, instagram_handle: str | None, photographer_id: str | None = None) -> dict[str, Any]:
+async def run_portfolio_analyser(
+	website_url: str,
+	instagram_handle: str | None,
+	photographer_id: str | None = None,
+	civic_access_token: str | None = None,
+) -> dict[str, Any]:
 	try:
 		from .portfolio_analyser import (
 			create_agent,
@@ -182,11 +189,12 @@ async def run_portfolio_analyser(website_url: str, instagram_handle: str | None,
 		results_key=RESULTS_KEY,
 		target_table=TARGET_TABLE,
 		thread_id="portfolio-analyser-session",
+		civic_access_token=civic_access_token,
 		row_transform=portfolio_row_transform,
 	)
 
 
-async def run_business_outreach(business_id: int, profile_id: int) -> dict[str, Any]:
+async def run_business_outreach(business_id: int, profile_id: int, civic_access_token: str | None = None) -> dict[str, Any]:
 	try:
 		from .business_outreach_researcher import (
 			create_agent,
@@ -220,8 +228,52 @@ async def run_business_outreach(business_id: int, profile_id: int) -> dict[str, 
 		results_key=RESULTS_KEY,
 		target_table=TARGET_TABLE,
 		thread_id=f"business-outreach-session-{business_id}-{profile_id}",
+		civic_access_token=civic_access_token,
 		row_transform=outreach_row_transform,
 	)
+
+
+async def run_gmail_recent_subjects(civic_access_token: str | None = None) -> dict[str, Any]:
+	try:
+		from .gmail_recent_subjects import (
+			create_agent,
+			build_prompt,
+			RESULTS_KEY,
+			SUBMIT_TOOL_NAME,
+		)
+	except ImportError:
+		from gmail_recent_subjects import (  # type: ignore
+			create_agent,
+			build_prompt,
+			RESULTS_KEY,
+			SUBMIT_TOOL_NAME,
+		)
+
+	agent = await create_agent(civic_access_token=civic_access_token)
+	prompt = build_prompt()
+	config = {"configurable": {"thread_id": "gmail-recent-subjects-session"}}
+
+	result = await agent.ainvoke(
+		{"messages": [{"role": "user", "content": prompt}]},
+		config=config,
+	)
+
+	structured_data = extract_submit_payload(result, SUBMIT_TOOL_NAME)
+	if not structured_data:
+		last_message = result["messages"][-1]
+		return {
+			"ok": False,
+			"inserted_count": 0,
+			"error": "Agent did not call submit tool",
+			"raw_response": last_message.content,
+		}
+
+	rows = structured_data.get(RESULTS_KEY, [])
+	return {
+		"ok": True,
+		"inserted_count": len(rows),
+		"data": structured_data,
+	}
 
 
 async def main(
@@ -252,6 +304,9 @@ async def main(
 		result = await run_business_outreach(business_id, profile_id)
 		if agent != "all":
 			return result
+	if agent in {"gmail-recent-subjects"}:
+		result = await run_gmail_recent_subjects()
+		return result
 	return None
 
 
@@ -259,7 +314,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="Run PhotoPal agents and persist output to Supabase.")
 	parser.add_argument(
 		"--agent",
-		choices=["lead-finder", "portfolio-analyser", "business-outreach", "all"],
+		choices=["lead-finder", "portfolio-analyser", "business-outreach", "gmail-recent-subjects", "all"],
 		default="all",
 		help="Choose which agent to run.",
 	)
