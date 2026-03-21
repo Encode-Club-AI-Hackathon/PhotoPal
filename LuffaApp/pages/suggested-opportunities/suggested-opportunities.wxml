@@ -1,0 +1,26 @@
+<view class="container page">
+  <view class="card">
+    <text class="title">Suggested Opportunities</text>
+    <text class="subtitle">Leads loaded from your backend API.</text>
+  </view>
+
+  <view class="card" wx:if="{{loading}}">
+    <text class="subtitle">Loading opportunities...</text>
+  </view>
+
+  <view class="card" wx:if="{{errorMessage}}">
+    <text class="subtitle">{{errorMessage}}</text>
+    <button class="retry-btn" bindtap="fetchSuggestedLeads">Try again</button>
+  </view>
+
+  <view class="card" wx:if="{{!loading && !errorMessage && leads.length === 0}}">
+    <text class="subtitle">No opportunities found yet.</text>
+  </view>
+
+  <view class="lead-card" wx:for="{{leads}}" wx:key="id" wx:if="{{!loading && !errorMessage && leads.length > 0}}">
+    <text class="lead-name">{{item.name}}</text>
+    <text class="lead-detail">Location: {{item.location || 'N/A'}}</text>
+    <text class="lead-detail">Score: {{item.lead_score || 0}}</text>
+    <text class="lead-detail">Contacted: {{item.contacted ? 'Yes' : 'No'}}</text>
+  </view>
+</view>

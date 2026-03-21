@@ -1,0 +1,6 @@
+<view class="container page">
+  <view class="card">
+    <text class="title">Profile</text>
+    <text class="subtitle">This page is ready for your profile content.</text>
+  </view>
+</view>
