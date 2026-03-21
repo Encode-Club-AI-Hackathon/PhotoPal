@@ -6,6 +6,7 @@ const { defaultSettingsIcon } = require("../../utils/settings_icon");
 
 const API_BASE = "https://grizzly-organic-kingfish.ngrok-free.app";
 const AUTH_SESSION_STORAGE_KEY = "pendingAuthSession";
+const AUTH_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 Page({
   data: {
@@ -115,8 +116,52 @@ Page({
       url: "../suggested-opportunities/suggested-opportunities",
     });
   },
+
+  isLoggedIn: function () {
+    const globalAuth = app.globalData.auth || {};
+    if (globalAuth.accessToken && globalAuth.issuedAt) {
+      if (Date.now() - Number(globalAuth.issuedAt) <= AUTH_TOKEN_TTL_MS) {
+        return true;
+      }
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    if (globalAuth.accessToken) {
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    const storedAuth = wx.getStorageSync("auth") || {};
+    if (storedAuth.accessToken && storedAuth.issuedAt) {
+      if (Date.now() - Number(storedAuth.issuedAt) <= AUTH_TOKEN_TTL_MS) {
+        app.globalData.auth = storedAuth;
+        return true;
+      }
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    if (storedAuth.accessToken) {
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    return false;
+  },
+
   handleLogin: function () {
     if (this.data.authPolling) return;
+
+    if (this.isLoggedIn()) {
+      this.clearPendingAuthSession();
+      wx.showToast({ title: "Already logged in", icon: "none" });
+      return;
+    }
 
     const pending = this.getPendingAuthSession();
     if (pending && pending.sessionId) {
@@ -166,7 +211,7 @@ Page({
           success: () => {
             wx.showModal({
               title: "Continue in browser",
-              content: `Open Safari/Chrome and visit the copied URL.\nCode: ${d.user_code || "-"}`,
+              content: `Open Safari/Chrome and visit the copied URL.`,
               showCancel: false,
             });
           },
@@ -195,6 +240,7 @@ Page({
             accessToken: d.access_token || "",
             refreshToken: d.refresh_token || "",
             profile: d.profile || {},
+            issuedAt: Date.now(),
           };
           wx.setStorageSync("auth", app.globalData.auth);
           this.clearPendingAuthSession();
@@ -249,6 +295,11 @@ Page({
 
   resumePendingAuthSession: function () {
     if (this.data.authPolling) {
+      return;
+    }
+
+    if (this.isLoggedIn()) {
+      this.clearPendingAuthSession();
       return;
     }
 
