@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 # Correct imports
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -37,13 +37,30 @@ class LeadList(BaseModel):
     leads: List[BusinessLead] = Field(description="A list of business leads found during the search")
 
 
-LEAD_FINDER_PROMPT = (
-    "Search the web for businesses in exeter. Use the photographer-lead-finder skill. "
-    "Once you have compiled the leads, you MUST call the `submit_final_leads` tool to output your results."
-)
 SUBMIT_TOOL_NAME = "submit_final_leads"
 RESULTS_KEY = "leads"
 TARGET_TABLE = "businesses"
+
+
+def build_prompt(profile: dict[str, Any]) -> str:
+    name = profile.get("name", "the photographer")
+    primary_niche = profile.get("primary_niche", "general photography")
+    city = profile.get("location_city")
+    country = profile.get("location_country")
+    travel = profile.get("willingness_to_travel")
+    secondary = profile.get("secondary_niches") or []
+
+    location = ", ".join(part for part in [city, country] if part) or "their local area"
+    travel_text = "They are willing to travel." if travel else "Assume they primarily serve local businesses."
+    secondary_text = ", ".join(secondary) if secondary else "none provided"
+
+    return (
+        f"Find strong business leads for photographer '{name}'. "
+        f"Primary niche: {primary_niche}. Secondary niches: {secondary_text}. "
+        f"Base location: {location}. {travel_text} "
+        "Use the photographer-lead-finder skill. Prioritize businesses likely to need this style. "
+        "Once complete, you MUST call `submit_final_leads` to output your final structured leads."
+    )
 
 # --- 2. Create the Submit Tool ---
 @tool(args_schema=LeadList)

@@ -35,14 +35,18 @@ class ProfileList(BaseModel):
 	profiles: List[PhotographerProfile] = Field(description="Structured photographer profiles")
 
 
-PORTFOLIO_ANALYSER_PROMPT = (
-	"URL: https://gallery.beedham.org instagram: @henrybeed Search the web for photographers and analyze their portfolio sites/social profiles. "
-	"Use the portfolio-analyzer skill. Extract structured photographer profile data. "
-	"Once complete, you MUST call `submit_final_profiles` with your final results."
-)
 SUBMIT_TOOL_NAME = "submit_final_profiles"
 RESULTS_KEY = "profiles"
 TARGET_TABLE = "photographer_profiles"
+
+
+def build_prompt(website_url: str, instagram_handle: str | None = None) -> str:
+	insta_part = f" Instagram: @{instagram_handle}." if instagram_handle else ""
+	return (
+		f"Analyze this photographer profile. Website: {website_url}.{insta_part} "
+		"Use the portfolio-analyzer skill to extract structured profile data from portfolio and socials. "
+		"Once complete, you MUST call `submit_final_profiles` with your final results."
+	)
 
 
 @tool(args_schema=ProfileList)
