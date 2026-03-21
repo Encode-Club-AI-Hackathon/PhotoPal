@@ -10,6 +10,7 @@ attrs==26.1.0
 certifi==2026.2.25
 cffi==2.0.0
 charset-normalizer==3.4.6
+civic-auth==0.1.2
 click==8.1.8
 cryptography==46.0.5
 dataclasses-json==0.6.7
