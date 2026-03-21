@@ -15,5 +15,6 @@
       <text class="settings-row-chevron">›</text>
     </button>
     <button class="secondary-btn" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
+    <button class="secondary-btn" bindtap="handleLogin">Login</button>
   </view>
 </view>
