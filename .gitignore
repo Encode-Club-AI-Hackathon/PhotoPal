@@ -19,6 +19,7 @@ dist/
 .env.*
 LuffaApp/.env
 LuffaApp/.env.*
+LuffaApp/config/env.generated.js
 
 # Logs
 *.log
@@ -41,11 +42,6 @@ yarn-error.log
 yarn-debug.log
 /dist
 /build
-
-# Civic / credentials (do not commit keys)
-*.key
-*.pem
-*.json
 
 # Database
 backend/database/photopal.db
