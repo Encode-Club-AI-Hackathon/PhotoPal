@@ -1,0 +1,80 @@
+<view class="container profile-page">
+  <view class="profile-card">
+    <text class="title">Complete Your Profile</text>
+    <text class="subtitle" wx:if="{{step === 'initial'}}">Start with Instagram and portfolio. We will research the rest automatically.</text>
+    <text class="subtitle" wx:elif="{{step === 'confirm'}}">Review the auto-filled details from the analyzer and confirm.</text>
+
+    <block wx:if="{{step === 'initial'}}">
+      <view class="field">
+        <text class="label">Instagram</text>
+        <input class="input" placeholder="username (without @)" value="{{instagramHandle}}" bindinput="onInstagramInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Portfolio Link</text>
+        <input class="input" placeholder="https://your-portfolio.com" value="{{portfolioUrl}}" bindinput="onPortfolioUrlInput" />
+      </view>
+    </block>
+
+    <block wx:if="{{step === 'confirm'}}">
+      <view class="field">
+        <text class="label">Name</text>
+        <input class="input" placeholder="Your display name" value="{{name}}" bindinput="onNameInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Contact Email</text>
+        <input class="input" placeholder="you@example.com" value="{{contactEmail}}" bindinput="onContactEmailInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Location (City)</text>
+        <input class="input" placeholder="e.g. London" value="{{locationCity}}" bindinput="onLocationCityInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Location (Country)</text>
+        <input class="input" placeholder="e.g. UK" value="{{locationCountry}}" bindinput="onLocationCountryInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Instagram</text>
+        <input class="input" placeholder="username (without @)" value="{{instagramHandle}}" bindinput="onInstagramInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Portfolio Link</text>
+        <input class="input" placeholder="https://your-portfolio.com" value="{{portfolioUrl}}" bindinput="onPortfolioUrlInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Primary Niche</text>
+        <input class="input" placeholder="e.g. Wedding, Brand, Food" value="{{primaryNiche}}" bindinput="onPrimaryNicheInput" />
+      </view>
+
+      <view class="field">
+        <text class="label">Secondary Niches</text>
+        <input class="input" placeholder="Comma-separated" value="{{secondaryNiches}}" bindinput="onSecondaryNichesInput" />
+      </view>
+
+      <view class="switch-row">
+        <text class="label">Human presence in portfolio</text>
+        <switch checked="{{humanPresence}}" bindchange="onHumanPresenceChange" />
+      </view>
+
+      <view class="switch-row">
+        <text class="label">Willing to travel</text>
+        <switch checked="{{willingToTravel}}" bindchange="onTravelChange" />
+      </view>
+
+      <view class="switch-row">
+        <text class="label">Studio access</text>
+        <switch checked="{{studioAccess}}" bindchange="onStudioChange" />
+      </view>
+    </block>
+
+    <button class="submit-btn" bindtap="onSubmit" loading="{{submitting || saving}}" disabled="{{submitting || saving}}">
+      {{step === 'initial' ? (submitting ? 'Analyzing...' : 'Analyze Portfolio') : (saving ? 'Saving...' : 'Confirm Details')}}
+    </button>
+  </view>
+</view>
