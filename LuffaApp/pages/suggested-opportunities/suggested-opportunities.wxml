@@ -18,7 +18,7 @@
   </view>
 
   <view class="opportunity-list" wx:if="{{!loading && !errorMessage && leads.length > 0}}">
-    <view class="opportunity-card" wx:for="{{leads}}" wx:key="id" wx:for-index="idx">
+    <view class="opportunity-card" wx:for="{{leads}}" wx:key="leadKey" wx:for-index="idx">
       <view class="card-header">
         <view class="card-title-wrap">
           <text class="business-name">{{item.businessName}}</text>
@@ -69,12 +69,12 @@
 
       <view class="action-row">
         <button class="ghost-btn" bindtap="openWebsite" data-website="{{item.website}}">Open Website</button>
-        <button class="solid-btn" bindtap="toggleContact" data-index="{{idx}}">
-          {{item.showContact ? 'Hide Contact' : 'Show Contact'}}
+        <button class="solid-btn" bindtap="toggleContact" data-lead-key="{{item.leadKey}}">
+          {{activeContactLeadKey === item.leadKey ? 'Hide Contact' : 'Show Contact'}}
         </button>
       </view>
 
-      <view class="contact-panel" wx:if="{{item.showContact}}">
+      <view class="contact-panel" wx:if="{{activeContactLeadKey === item.leadKey}}">
         <text class="contact-title">Contact Details</text>
         <text class="contact-line">Name: {{item.contactName || 'Unknown'}}</text>
         <text class="contact-line">Email: {{item.emailAddress || 'Not provided'}}</text>
