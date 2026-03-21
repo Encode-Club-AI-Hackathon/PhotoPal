@@ -1,20 +1,105 @@
-.userinfo {
+.page {
+  min-height: 100vh;
+  padding: 56rpx 32rpx;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 28rpx;
+  background: linear-gradient(160deg, #fff8ef 0%, #f4f7ff 100%);
+}
+
+.hero-card,
+.actions-card {
+  width: 100%;
+  padding: 36rpx;
+  box-sizing: border-box;
+  border-radius: 26rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 24rpx rgba(20, 28, 40, 0.08);
+}
+
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.brand-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  color: #4c5a73;
+}
+
+.welcome-title {
+  font-size: 52rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #182033;
+}
+
+.welcome-subtitle {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #44516a;
+}
+
+.actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #182033;
+}
+
+.secondary-btn {
+  width: 100%;
+  margin: 0;
+  border-radius: 16rpx;
+  background: #ffffff;
+  border: 2rpx solid #13294b;
+  color: #13294b;
+}
+
+.settings-row {
+  width: 100%;
+  height: 92rpx;
+  line-height: 92rpx;
+  margin: 0;
+  padding: 0 24rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #d7deec;
+  background: #ffffff;
+  color: #13294b;
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: space-between;
 }
 
-.userinfo-avatar {
-  width: 128rpx;
-  height: 128rpx;
-  margin: 20rpx;
-  border-radius: 50%;
+.settings-row-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14rpx;
 }
 
-.userinfo-nickname {
-  color: #aaa;
+.settings-row-icon {
+  width: 40rpx;
+  height: 40rpx;
 }
 
-.usermotto {
-  margin-top: 200px;
+.settings-row-text {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.settings-row-chevron {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #7b89a1;
 }

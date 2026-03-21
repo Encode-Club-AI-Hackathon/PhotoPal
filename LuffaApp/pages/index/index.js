@@ -1,53 +1,34 @@
 //index.js
-//get application instance
-const { defaultIcon } = require('../../utils/icon');
 const app = getApp()
-
+const { defaultSettingsIcon } = require('../../utils/settings_icon')
 
 Page({
   data: {
-    motto: 'Hello World',
-    userInfo: {},
-    hasUserInfo: false,
-    canIUse: wx.canIUse('button.open-type.getUserInfo')
-  },
-  // event handler function
-  bindViewTap: function () {
-    wx.navigateTo({
-      url: '../logs/logs'
-    })
+    title: 'PhotoPal',
+    subtitle: 'Plan shoots, track leads, and focus on the work you love.',
+    displayName: 'Photographer',
+    settingsIcon: defaultSettingsIcon
   },
   onLoad: function () {
-    if (app.globalData.userInfo) {
-      this.setData({
-        userInfo: app.globalData.userInfo,
-        hasUserInfo: true
-      })
-    } else if (this.data.canIUse) {
-      // do someting
-    } else {
-      // There is no compatibility processing for open-type=getUserInfo version
-      wx.getUserInfo({
-        success: res => {
-          app.globalData.userInfo = res.userInfo
-          this.setData({
-            userInfo: res.userInfo,
-            hasUserInfo: true
-          })
-        }
-      })
-    }
+    this.updateDisplayName()
   },
-  getUserInfo: function (e) {
-    console.log('getUserInfo ----> ', e);
-    app.globalData.userInfo = e.detail.userInfo || "";
-    const userInfo = e.detail.userInfo || {
-      avatarUrl: defaultIcon,
-      nickName: 'userNickName'
-    }
+  onShow: function () {
+    this.updateDisplayName()
+  },
+  updateDisplayName: function () {
+    const userInfo = app.globalData.userInfo || {}
     this.setData({
-      userInfo: userInfo,
-      hasUserInfo: true
+      displayName: userInfo.nickName || 'Photographer'
+    })
+  },
+  goToSettings: function () {
+    wx.navigateTo({
+      url: '../settings/settings'
+    })
+  },
+  goToSuggestedOpportunities: function () {
+    wx.navigateTo({
+      url: '../suggested-opportunities/suggested-opportunities'
     })
   }
 })
