@@ -17,6 +17,10 @@ function buildWalletFromPayload(payload) {
   }
 }
 
+const API_BASE = "https://grizzly-organic-kingfish.ngrok-free.app";
+const AUTH_SESSION_STORAGE_KEY = "pendingAuthSession";
+const AUTH_TOKEN_TTL_MS = 15 * 60 * 1000;
+
 Page({
   data: {
     title: "PhotoPal",
@@ -35,17 +39,23 @@ Page({
     walletAddress: '',
     walletNickname: '',
     walletUid: '',
-    walletCid: ''
+    walletCid: '',
+    authPolling: false,
+    authSessionId: "",
+    authUserCode: "",
+    authVerificationUrl: "",
   },
   onLoad: function () {
     this.updateDisplayName();
     this.updateDisplayName();
     this.syncWalletState();
+    this.resumePendingAuthSession();
   },
   onShow: function () {
     this.updateDisplayName();
     this.updateDisplayName();
     this.syncWalletState();
+    this.resumePendingAuthSession();
   },
   updateDisplayName: function () {
     const userInfo = app.globalData.userInfo || {};
@@ -59,47 +69,47 @@ Page({
     if (wallet && wallet.address) {
       this.setData({
         walletConnected: true,
-        walletAddress: wallet.address || '',
-        walletNickname: wallet.nickname || '',
-        walletUid: wallet.uid || '',
-        walletCid: wallet.cid || ''
-      })
-      this.updateDisplayName()
-      this.checkPhotographerProfile(wallet.uid || '')
-      return
+        walletAddress: wallet.address || "",
+        walletNickname: wallet.nickname || "",
+        walletUid: wallet.uid || "",
+        walletCid: wallet.cid || "",
+      });
+      this.updateDisplayName();
+      this.checkPhotographerProfile(wallet.uid || "");
+      return;
     }
 
     this.setData({
       walletConnected: false,
       hasPhotographerProfile: false,
       checkingProfile: false,
-      walletAddress: '',
-      walletNickname: '',
-      walletUid: '',
-      walletCid: ''
-    })
-    this.updateDisplayName()
+      walletAddress: "",
+      walletNickname: "",
+      walletUid: "",
+      walletCid: "",
+    });
+    this.updateDisplayName();
   },
   checkPhotographerProfile: function (uid, onDone) {
     const finish = (exists) => {
       this.setData({
         hasPhotographerProfile: !!exists,
-        checkingProfile: false
-      })
-      if (typeof onDone === 'function') onDone(!!exists)
-    }
+        checkingProfile: false,
+      });
+      if (typeof onDone === "function") onDone(!!exists);
+    };
 
     if (!uid) {
-      finish(false)
-      return
+      finish(false);
+      return;
     }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_URL.includes('supabase.co')) {
-      finish(false)
-      return
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_URL.includes("supabase.co")) {
+      finish(false);
+      return;
     }
 
-    this.setData({ checkingProfile: true })
+    this.setData({ checkingProfile: true });
 
     wx.request({
       url: `${SUPABASE_URL}/rest/v1/photographer_profiles?photographer_id=eq.${encodeURIComponent(uid)}&select=photographer_id&limit=1`,
@@ -109,13 +119,13 @@ Page({
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
       success: (res) => {
-        const exists = Array.isArray(res.data) && res.data.length > 0
-        finish(exists)
+        const exists = Array.isArray(res.data) && res.data.length > 0;
+        finish(exists);
       },
       fail: () => {
-        finish(false)
-      }
-    })
+        finish(false);
+      },
+    });
   },
   onConnectWallet: function () {
     if (this.data.connectingWallet || this.data.walletConnected) {
@@ -134,25 +144,26 @@ Page({
           return;
         }
 
-      app.globalData.wallet = wallet
-      wx.setStorageSync('wallet', wallet)
-      this.setData({ connectingWallet: false })
-      this.syncWalletState()
-      wx.showToast({ title: 'Wallet connected', icon: 'success' })
+        app.globalData.wallet = wallet;
+        wx.setStorageSync("wallet", wallet);
+        this.setData({ connectingWallet: false });
+        this.syncWalletState();
+        wx.showToast({ title: "Wallet connected", icon: "success" });
 
-      this.checkPhotographerProfile(wallet.uid || '', (exists) => {
-        if (exists) return
-        setTimeout(() => {
-          wx.navigateTo({
-            url: '../profile-intake/profile-intake'
-          })
-        }, 350)
+        this.checkPhotographerProfile(wallet.uid || "", (exists) => {
+          if (exists) return;
+          setTimeout(() => {
+            wx.navigateTo({
+              url: "../profile-intake/profile-intake",
+            });
+          }, 350);
+        });
       })
-    }).catch((err) => {
-      console.error('Connect wallet failed:', err)
-      this.setData({ connectingWallet: false })
-      wx.showToast({ title: 'Connection failed', icon: 'none' })
-    })
+      .catch((err) => {
+        console.error("Connect wallet failed:", err);
+        this.setData({ connectingWallet: false });
+        wx.showToast({ title: "Connection failed", icon: "none" });
+      });
   },
   goToSettings: function () {
     wx.navigateTo({
@@ -189,18 +200,213 @@ Page({
       url: '../profile/profile'
     })
   },
-  handleLogin: function (event) {
-    const URL = "http://localhost:8000/custom/login";
-    console.log(app.globalData.userInfo);
-    wx.navigateTo({
-      url: "../suggested-opportunities/suggested-opportunities",
+
+  isLoggedIn: function () {
+    const globalAuth = app.globalData.auth || {};
+    if (globalAuth.accessToken && globalAuth.issuedAt) {
+      if (Date.now() - Number(globalAuth.issuedAt) <= AUTH_TOKEN_TTL_MS) {
+        return true;
+      }
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    if (globalAuth.accessToken) {
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    const storedAuth = wx.getStorageSync("auth") || {};
+    if (storedAuth.accessToken && storedAuth.issuedAt) {
+      if (Date.now() - Number(storedAuth.issuedAt) <= AUTH_TOKEN_TTL_MS) {
+        app.globalData.auth = storedAuth;
+        return true;
+      }
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    if (storedAuth.accessToken) {
+      app.globalData.auth = {};
+      wx.removeStorageSync("auth");
+      return false;
+    }
+
+    return false;
+  },
+
+  handleLogin: function () {
+    if (this.data.authPolling) return;
+
+    if (this.isLoggedIn()) {
+      this.clearPendingAuthSession();
+      wx.showToast({ title: "Already logged in", icon: "none" });
+      return;
+    }
+
+    const pending = this.getPendingAuthSession();
+    if (pending && pending.sessionId) {
+      this.setData({
+        authPolling: true,
+        authSessionId: pending.sessionId,
+        authUserCode: pending.userCode || "",
+        authVerificationUrl: pending.verificationUrl || "",
+      });
+      this.pollLoginStatus(pending.sessionId, Number(pending.interval || 3));
+      wx.showToast({ title: "Resuming login", icon: "none" });
+      return;
+    }
+
+    const wallet = app.globalData.wallet || {};
+    wx.request({
+      url: `${API_BASE}/auth/device/start`,
+      method: "POST",
+      data: {
+        wallet_uid: wallet.uid || "",
+        wallet_address: wallet.address || "",
+      },
+      success: (res) => {
+        const d = (res && res.data) || {};
+        if (!d.session_id || !d.verification_url) {
+          wx.showToast({ title: "Login start failed", icon: "none" });
+          return;
+        }
+
+        this.setData({
+          authPolling: true,
+          authSessionId: d.session_id,
+          authUserCode: d.user_code || "",
+          authVerificationUrl: d.verification_url,
+        });
+
+        this.savePendingAuthSession({
+          sessionId: d.session_id,
+          userCode: d.user_code || "",
+          verificationUrl: d.verification_url,
+          interval: Number(d.interval || 3),
+          expiresAt: Date.now() + Number((d.expires_in || 600) * 1000),
+        });
+
+        wx.setClipboardData({
+          data: d.verification_url,
+          success: () => {
+            wx.showModal({
+              title: "Continue in browser",
+              content: `Open Safari/Chrome and visit the copied URL.`,
+              showCancel: false,
+            });
+          },
+        });
+
+        this.pollLoginStatus(d.session_id, Number(d.interval || 3));
+      },
+      fail: () => {
+        wx.showToast({ title: "Network error", icon: "none" });
+      },
     });
   },
-  handleLogin: function (event) {
-    const URL = "http://localhost:8000/custom/login";
-    console.log(app.globalData.userInfo);
-    wx.navigateTo({
-      url: `/pages/webview/webview?url=${encodeURIComponent(URL)}`,
+
+  pollLoginStatus: function (sessionId, intervalSec) {
+    if (!this.data.authPolling || !sessionId) return;
+
+    wx.request({
+      url: `${API_BASE}/auth/device/status?session_id=${encodeURIComponent(sessionId)}`,
+      method: "GET",
+      success: (res) => {
+        const d = (res && res.data) || {};
+        const status = d.status;
+
+        if (status === "approved") {
+          app.globalData.auth = {
+            accessToken: d.access_token || "",
+            refreshToken: d.refresh_token || "",
+            profile: d.profile || {},
+            issuedAt: Date.now(),
+          };
+          wx.setStorageSync("auth", app.globalData.auth);
+          this.clearPendingAuthSession();
+          this.stopLoginPolling();
+          wx.showToast({ title: "Login successful", icon: "success" });
+          return;
+        }
+
+        if (status === "denied" || status === "expired") {
+          this.clearPendingAuthSession();
+          this.stopLoginPolling();
+          wx.showToast({ title: `Login ${status}`, icon: "none" });
+          return;
+        }
+
+        setTimeout(() => this.pollLoginStatus(sessionId, intervalSec), intervalSec * 1000);
+      },
+      fail: () => {
+        setTimeout(() => this.pollLoginStatus(sessionId, intervalSec), intervalSec * 1000);
+      },
     });
+  },
+
+  stopLoginPolling: function () {
+    this.setData({
+      authPolling: false,
+      authSessionId: "",
+      authUserCode: "",
+      authVerificationUrl: "",
+    });
+  },
+
+  savePendingAuthSession: function (session) {
+    wx.setStorageSync(AUTH_SESSION_STORAGE_KEY, session);
+  },
+
+  getPendingAuthSession: function () {
+    const session = wx.getStorageSync(AUTH_SESSION_STORAGE_KEY);
+    if (!session || !session.sessionId) {
+      return null;
+    }
+    if (session.expiresAt && Date.now() > Number(session.expiresAt)) {
+      this.clearPendingAuthSession();
+      return null;
+    }
+    return session;
+  },
+
+  clearPendingAuthSession: function () {
+    wx.removeStorageSync(AUTH_SESSION_STORAGE_KEY);
+  },
+
+  resumePendingAuthSession: function () {
+    if (this.data.authPolling) {
+      return;
+    }
+
+    if (this.isLoggedIn()) {
+      this.clearPendingAuthSession();
+      return;
+    }
+
+    const pending = this.getPendingAuthSession();
+    if (!pending || !pending.sessionId) {
+      return;
+    }
+
+    this.setData({
+      authPolling: true,
+      authSessionId: pending.sessionId,
+      authUserCode: pending.userCode || "",
+      authVerificationUrl: pending.verificationUrl || "",
+    });
+
+    this.pollLoginStatus(pending.sessionId, Number(pending.interval || 3));
+  },
+
+  onHide: function () {
+    this.setData({ authPolling: false });
+  },
+
+  onUnload: function () {
+    this.setData({ authPolling: false });
   },
 });
