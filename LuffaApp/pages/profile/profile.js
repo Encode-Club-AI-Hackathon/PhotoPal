@@ -66,7 +66,7 @@ Page({
     })
 
     wx.request({
-      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?uid=eq.${encodeURIComponent(walletUid)}&select=uid,name,primary_niche,contact_email,website_url,instagram_handle,secondary_niches,human_presence,location_city,location_country,willingness_to_travel,studio_access&limit=1`,
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?photographer_id=eq.${encodeURIComponent(walletUid)}&select=photographer_id,name,primary_niche,contact_email,website_url,instagram_handle,secondary_niches,human_presence,location_city,location_country,willingness_to_travel,studio_access&limit=1`,
       method: 'GET',
       header: {
         apikey: SUPABASE_ANON_KEY,

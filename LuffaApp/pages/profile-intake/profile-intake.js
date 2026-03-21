@@ -153,7 +153,7 @@ Page({
     const payload = {
       website_url: websiteUrl,
       instagram_handle: cleanHandle(this.data.instagramHandle) || null,
-      uid: (app.globalData.wallet && app.globalData.wallet.uid) || null
+      photographer_id: (app.globalData.wallet && app.globalData.wallet.uid) || null
     }
 
     this.setData({ submitting: true })
@@ -270,14 +270,14 @@ Page({
       return
     }
 
-    const walletUid = (app.globalData.wallet && app.globalData.wallet.uid) || ''
-    if (!walletUid) {
-      wx.showToast({ title: 'Wallet UID missing', icon: 'none' })
+    const photographerId = (app.globalData.wallet && app.globalData.wallet.uid) || ''
+    if (!photographerId) {
+      wx.showToast({ title: 'Photographer ID missing', icon: 'none' })
       return
     }
 
     const row = {
-      uid: walletUid,
+      photographer_id: photographerId,
       name: profile.name || null,
       primary_niche: profile.primary_niche || null,
       contact_email: profile.contact_email || null,
@@ -294,7 +294,7 @@ Page({
     this.setData({ saving: true })
 
     wx.request({
-      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=uid`,
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=photographer_id`,
       method: 'POST',
       header: {
         apikey: SUPABASE_ANON_KEY,

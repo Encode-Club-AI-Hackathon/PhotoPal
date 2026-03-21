@@ -102,7 +102,7 @@ Page({
     this.setData({ checkingProfile: true })
 
     wx.request({
-      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?uid=eq.${encodeURIComponent(uid)}&select=uid&limit=1`,
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?photographer_id=eq.${encodeURIComponent(uid)}&select=photographer_id&limit=1`,
       method: 'GET',
       header: {
         apikey: SUPABASE_ANON_KEY,
