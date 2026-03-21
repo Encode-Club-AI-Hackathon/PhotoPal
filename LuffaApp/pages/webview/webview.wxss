@@ -1,0 +1,18 @@
+.webview-page {
+  width: 100%;
+  height: 100vh;
+}
+
+.empty {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.empty-text {
+  color: #64748b;
+  font-size: 28rpx;
+}

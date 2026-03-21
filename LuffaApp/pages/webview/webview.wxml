@@ -1,0 +1,7 @@
+<view class="webview-page" wx:if="{{url}}">
+  <web-view src="{{url}}"></web-view>
+</view>
+
+<view class="empty" wx:else>
+  <text class="empty-text">Unable to load this website.</text>
+</view>
