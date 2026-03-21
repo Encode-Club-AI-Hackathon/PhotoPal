@@ -1,0 +1,11 @@
+<view class="container settings-page">
+  <view class="settings-card">
+    <text class="settings-title">Settings</text>
+    <text class="settings-subtitle">Manage your app preferences and account.</text>
+
+    <button class="settings-item" bindtap="goToProfile">
+      <text class="item-label">Profile</text>
+      <text class="item-arrow">›</text>
+    </button>
+  </view>
+</view>
