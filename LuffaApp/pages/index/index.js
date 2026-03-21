@@ -7,20 +7,30 @@ const { defaultInfoIcon } = require('../../utils/info')
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require('../../config/supabase')
 
 function buildWalletFromPayload(payload) {
-  const data = payload || {}
+  const data = payload || {};
   return {
-    address: data.address || data.walletAddress || '',
-    avatarUrl: data.avatar || data.avatarUrl || '',
-    avatarFrame: data.avatar_frame || data.avatarFrame || '',
-    cid: data.cid || '',
-    nickname: data.nickname || data.nickName || 'Anonymous',
-    uid: data.uid || ''
-  }
+    address: data.address || data.walletAddress || "",
+    avatarUrl: data.avatar || data.avatarUrl || "",
+    avatarFrame: data.avatar_frame || data.avatarFrame || "",
+    cid: data.cid || "",
+    nickname: data.nickname || data.nickName || "Anonymous",
+    uid: data.uid || "",
+  };
 }
 
 const API_BASE = "https://grizzly-organic-kingfish.ngrok-free.app";
 const AUTH_SESSION_STORAGE_KEY = "pendingAuthSession";
 const AUTH_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+function requestAsync(options) {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      ...options,
+      success: resolve,
+      fail: reject,
+    });
+  });
+}
 
 Page({
   data: {
@@ -35,15 +45,15 @@ Page({
     checkingProfile: false,
     walletConnected: false,
     hasPhotographerProfile: false,
-    walletAddress: '',
-    walletNickname: '',
-    walletUid: '',
-    walletCid: '',
+    walletAddress: "",
+    walletNickname: "",
+    walletUid: "",
+    walletCid: "",
     authPolling: false,
     authSessionId: "",
     authUserCode: "",
     authVerificationUrl: "",
-    loggedIn: false,
+    loadingGmailSubjects: false,
     showAuthCenter: false,
   },
   onLoad: function () {
@@ -125,7 +135,7 @@ Page({
 
     wx.request({
       url: `${SUPABASE_URL}/rest/v1/photographer_profiles?photographer_id=eq.${encodeURIComponent(uid)}&select=photographer_id&limit=1`,
-      method: 'GET',
+      method: "GET",
       header: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -208,23 +218,23 @@ Page({
   },
   goToProfileIntake: function () {
     if (!this.data.walletConnected) {
-      wx.showToast({ title: 'Connect wallet first', icon: 'none' })
-      return
+      wx.showToast({ title: "Connect wallet first", icon: "none" });
+      return;
     }
 
     wx.navigateTo({
-      url: '../profile-intake/profile-intake'
-    })
+      url: "../profile-intake/profile-intake",
+    });
   },
   goToProfile: function () {
     if (!this.data.walletConnected) {
-      wx.showToast({ title: 'Connect wallet first', icon: 'none' })
-      return
+      wx.showToast({ title: "Connect wallet first", icon: "none" });
+      return;
     }
 
     wx.navigateTo({
-      url: '../profile/profile'
-    })
+      url: "../profile/profile",
+    });
   },
 
   isLoggedIn: function () {
@@ -342,8 +352,29 @@ Page({
       url: `${API_BASE}/auth/device/status?session_id=${encodeURIComponent(sessionId)}`,
       method: "GET",
       success: (res) => {
+        if (res.statusCode === 404) {
+          this.clearPendingAuthSession();
+          this.stopLoginPolling();
+          wx.showToast({ title: "Login session reset", icon: "none" });
+          this.handleLogin();
+          return;
+        }
+
+        if (!(res.statusCode >= 200 && res.statusCode < 300)) {
+          setTimeout(() => this.pollLoginStatus(sessionId, intervalSec), intervalSec * 1000);
+          return;
+        }
+
         const d = (res && res.data) || {};
         const status = d.status;
+
+        if (status === "unknown" || status === "session_not_found") {
+          this.clearPendingAuthSession();
+          this.stopLoginPolling();
+          wx.showToast({ title: "Login session reset", icon: "none" });
+          this.handleLogin();
+          return;
+        }
 
         if (status === "approved") {
           app.globalData.auth = {
@@ -429,6 +460,101 @@ Page({
     });
 
     this.pollLoginStatus(pending.sessionId, Number(pending.interval || 3));
+  },
+
+  handleLogout: function () {
+    app.globalData.auth = {};
+    wx.removeStorageSync("auth");
+    this.clearPendingAuthSession();
+    this.stopLoginPolling();
+    wx.showToast({ title: "Logged out", icon: "none" });
+  },
+
+  fetchRecentGmailSubjects: function () {
+    if (this.data.loadingGmailSubjects) {
+      return;
+    }
+
+    if (!this.isLoggedIn()) {
+      wx.showToast({ title: "Login first", icon: "none" });
+      return;
+    }
+
+    this.setData({ loadingGmailSubjects: true });
+
+    const auth = app.globalData.auth || wx.getStorageSync("auth") || {};
+    const accessToken = auth.accessToken || "";
+    if (!accessToken) {
+      this.setData({ loadingGmailSubjects: false });
+      wx.showToast({ title: "Missing access token", icon: "none" });
+      return;
+    }
+
+    requestAsync({
+      url: "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+      method: "GET",
+      header: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      data: {
+        maxResults: 5,
+      },
+    })
+      .then((listRes) => {
+        if (!(listRes.statusCode >= 200 && listRes.statusCode < 300)) {
+          const detail = (listRes.data && (listRes.data.error_description || listRes.data.error)) || "Gmail request failed";
+          throw new Error(String(detail));
+        }
+
+        const messages = (listRes.data && listRes.data.messages) || [];
+        if (!messages.length) {
+          wx.showToast({ title: "No emails found", icon: "none" });
+          return [];
+        }
+
+        const requests = messages.slice(0, 5).map((msg) =>
+          requestAsync({
+            url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
+            method: "GET",
+            header: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            data: {
+              format: "metadata",
+              metadataHeaders: "Subject",
+            },
+          }),
+        );
+
+        return Promise.all(requests);
+      })
+      .then((messageResponses) => {
+        if (!Array.isArray(messageResponses) || !messageResponses.length) {
+          return;
+        }
+
+        const subjects = messageResponses
+          .map((res) => {
+            const headers = (res.data && res.data.payload && res.data.payload.headers) || [];
+            const subjectHeader = headers.find((h) => (h.name || "").toLowerCase() === "subject");
+            return (subjectHeader && subjectHeader.value) || "(No subject)";
+          })
+          .slice(0, 5);
+
+        const lines = subjects.map((subject, index) => `${index + 1}. ${subject}`).join("\n");
+        wx.showModal({
+          title: "Last 5 Email Subjects",
+          content: lines,
+          showCancel: false,
+        });
+      })
+      .catch((err) => {
+        const msg = String((err && err.message) || "Gmail request failed").slice(0, 30);
+        wx.showToast({ title: msg || "Request failed", icon: "none" });
+      })
+      .finally(() => {
+        this.setData({ loadingGmailSubjects: false });
+      });
   },
 
   onHide: function () {

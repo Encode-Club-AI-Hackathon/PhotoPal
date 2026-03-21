@@ -16,9 +16,9 @@
   </view>
 
   <view class="hero-card">
-    <text class="brand-label">{{title}}</text>
-    <text class="welcome-title">Welcome, {{displayName}}</text>
-    <text class="welcome-subtitle">{{subtitle}}</text>
+    <text class="brand-label">{{ title }}</text>
+    <text class="welcome-title">Welcome, {{ displayName }}</text>
+    <text class="welcome-subtitle">{{ subtitle }}</text>
   </view>
 
   <view class="auth-center-wrap" wx:if="{{showAuthCenter}}">
@@ -36,6 +36,9 @@
     <button class="secondary-btn action-row-btn" wx:if="{{!walletConnected}}" bindtap="onConnectWallet" loading="{{connectingWallet}}" disabled="{{connectingWallet}}">{{connectingWallet ? 'Connecting Wallet...' : 'Connect Wallet'}}</button>
     <button class="secondary-btn action-row-btn" wx:if="{{walletConnected && !hasPhotographerProfile && !checkingProfile}}" bindtap="goToProfileIntake">Complete Profile for Analysis</button>
     <button class="secondary-btn action-row-btn" wx:if="{{walletConnected && hasPhotographerProfile}}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
+    <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects }}">
+      {{ loadingGmailSubjects ? "Fetching Gmail Subjects..." : "Get Last 5 Gmail Subjects" }}
+    </button>
   </view>
 
   <view class="google-connect-card" wx:if="{{!loggedIn}}">
@@ -45,5 +48,6 @@
       <image class="google-connect-icon" src="{{googleIcon}}" mode="aspectFit"></image>
       <text>Connect</text>
     </button>
+    <button class="secondary-btn" bindtap="handleLogout">Logout</button>
   </view>
 </view>
