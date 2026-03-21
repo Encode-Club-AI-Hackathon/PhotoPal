@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from agents.main import run_business_outreach
@@ -16,7 +18,7 @@ class BusinessOutreachRequest(BaseModel):
 async def business_outreach_route(payload: BusinessOutreachRequest):
     try:
         result = await run_business_outreach(payload.business_id, payload.photographer_id)
-        return result
+        return JSONResponse(content=jsonable_encoder(result))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
