@@ -55,3 +55,62 @@
   font-size: 34rpx;
   color: #66758f;
 }
+
+.wallet-card {
+  margin-top: 8rpx;
+  width: 100%;
+  border-radius: 16rpx;
+  border: 2rpx solid #d7deec;
+  background: #f8fbff;
+  padding: 22rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.wallet-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #182033;
+}
+
+.wallet-status {
+  font-size: 25rpx;
+  color: #2b3a55;
+}
+
+.wallet-avatar {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 46rpx;
+  border: 2rpx solid #d7deec;
+}
+
+.wallet-address {
+  font-size: 22rpx;
+  color: #4d5b74;
+  word-break: break-all;
+}
+
+.wallet-meta {
+  font-size: 23rpx;
+  color: #5e6b84;
+}
+
+.wallet-btn {
+  width: 100%;
+  margin: 0;
+  border-radius: 14rpx;
+}
+
+.wallet-connect {
+  background: #13294b;
+  color: #ffffff;
+}
+
+.wallet-disconnect {
+  background: #ffffff;
+  color: #13294b;
+  border: 2rpx solid #c8d3e8;
+}

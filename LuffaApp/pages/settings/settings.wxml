@@ -7,5 +7,21 @@
       <text class="item-label">Profile</text>
       <text class="item-arrow">›</text>
     </button>
+
+    <view class="wallet-card">
+      <text class="wallet-title">Wallet</text>
+      <text class="wallet-status">Status: {{connected ? 'Connected' : 'Not connected'}}</text>
+      <image class="wallet-avatar" wx:if="{{connected && avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"></image>
+      <text class="wallet-address" wx:if="{{connected}}">{{address}}</text>
+      <text class="wallet-meta" wx:if="{{connected && nickname}}">Name: {{nickname}}</text>
+      <text class="wallet-meta" wx:if="{{connected && uid}}">UID: {{uid}}</text>
+      <text class="wallet-meta" wx:if="{{connected && cid}}">CID: {{cid}}</text>
+      <text class="wallet-meta" wx:if="{{connected && avatarFrame}}">Avatar Frame: {{avatarFrame}}</text>
+
+      <button class="wallet-btn wallet-connect" wx:if="{{!connected}}" bindtap="onConnectWallet" loading="{{connecting}}" disabled="{{connecting}}">
+        {{connecting ? 'Connecting...' : 'Connect Wallet'}}
+      </button>
+      <button class="wallet-btn wallet-disconnect" wx:if="{{connected}}" bindtap="onDisconnectWallet">Disconnect Wallet</button>
+    </view>
   </view>
 </view>

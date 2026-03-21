@@ -1,7 +1,16 @@
-const runtimeEnv = typeof process !== 'undefined' && process.env ? process.env : {}
+let generatedEnv = {}
+try {
+  // Mini program runtime does not inject .env into process.env.
+  generatedEnv = require('./env.generated')
+} catch (e) {
+  generatedEnv = {}
+}
 
-const SUPABASE_URL = runtimeEnv.LUFFA_SUPABASE_URL || ''
-const SUPABASE_ANON_KEY = runtimeEnv.LUFFA_SUPABASE_ANON_KEY || ''
+const runtimeEnv = typeof process !== 'undefined' && process.env ? process.env : {}
+const env = Object.assign({}, generatedEnv, runtimeEnv)
+
+const SUPABASE_URL = env.LUFFA_SUPABASE_URL || ''
+const SUPABASE_ANON_KEY = env.LUFFA_SUPABASE_ANON_KEY || ''
 
 module.exports = {
   SUPABASE_URL,
