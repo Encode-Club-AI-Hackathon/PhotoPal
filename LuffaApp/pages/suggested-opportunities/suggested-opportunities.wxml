@@ -1,7 +1,7 @@
 <view class="container page">
-  <view class="card">
+  <view class="hero">
     <text class="title">Suggested Opportunities</text>
-    <text class="subtitle">Leads loaded from your backend API.</text>
+    <text class="subtitle">Fresh businesses matched for outreach, with contact info on demand.</text>
   </view>
 
   <view class="card" wx:if="{{loading}}">
@@ -17,10 +17,74 @@
     <text class="subtitle">No opportunities found yet.</text>
   </view>
 
-  <view class="lead-card" wx:for="{{leads}}" wx:key="id" wx:if="{{!loading && !errorMessage && leads.length > 0}}">
-    <text class="lead-name">{{item.name}}</text>
-    <text class="lead-detail">Location: {{item.location || 'N/A'}}</text>
-    <text class="lead-detail">Score: {{item.lead_score || 0}}</text>
-    <text class="lead-detail">Contacted: {{item.contacted ? 'Yes' : 'No'}}</text>
+  <view class="opportunity-list" wx:if="{{!loading && !errorMessage && leads.length > 0}}">
+    <view class="opportunity-card" wx:for="{{leads}}" wx:key="id" wx:for-index="idx">
+      <view class="card-header">
+        <view class="card-title-wrap">
+          <text class="business-name">{{item.businessName}}</text>
+        </view>
+        <text class="type-pill">{{item.type}}</text>
+      </view>
+
+      <view class="card-body">
+        <view class="map-block" wx:if="{{item.hasCoordinates}}">
+          <view class="map-head">
+            <text class="detail-label">Location</text>
+            <button
+              class="map-open-btn"
+              bindtap="openInMap"
+              data-lat="{{item.latitude}}"
+              data-lon="{{item.longitude}}"
+              data-mapurl="{{item.browserMapUrl}}"
+            >
+              Open Map
+            </button>
+          </view>
+          <image
+            wx:if="{{item.staticMapUrl}}"
+            class="location-map"
+            src="{{item.staticMapUrl}}"
+            mode="aspectFill"
+            bindtap="openInMap"
+            data-lat="{{item.latitude}}"
+            data-lon="{{item.longitude}}"
+            data-mapurl="{{item.browserMapUrl}}"
+          ></image>
+          <view class="map-image-fallback" wx:else>
+            <text class="map-fallback-text">Map preview unavailable (set Mapbox token).</text>
+          </view>
+          <text class="map-hint">Tap map to open in browser</text>
+        </view>
+
+        <view class="map-fallback" wx:else>
+          <text class="detail-label">Location</text>
+          <text class="detail-value">Location unavailable</text>
+        </view>
+      </view>
+
+      <view class="notes-box" wx:if="{{item.notesNeeds}}">
+        <text class="notes-title">Needs Snapshot</text>
+        <text class="notes-text">{{item.notesNeeds}}</text>
+      </view>
+
+      <view class="action-row">
+        <button class="ghost-btn" bindtap="openWebsite" data-website="{{item.website}}">Open Website</button>
+        <button class="solid-btn" bindtap="toggleContact" data-index="{{idx}}">
+          {{item.showContact ? 'Hide Contact' : 'Show Contact'}}
+        </button>
+      </view>
+
+      <view class="contact-panel" wx:if="{{item.showContact}}">
+        <text class="contact-title">Contact Details</text>
+        <text class="contact-line">Name: {{item.contactName || 'Unknown'}}</text>
+        <text class="contact-line">Email: {{item.emailAddress || 'Not provided'}}</text>
+        <text class="contact-line">Phone: {{item.phoneNumber || 'Not provided'}}</text>
+
+        <view class="contact-actions">
+          <button class="mini-btn" bindtap="copyEmail" data-email="{{item.emailAddress}}">Copy Email</button>
+          <button class="mini-btn" bindtap="callPhone" data-phone="{{item.phoneNumber}}">Call</button>
+        </view>
+      </view>
+    </view>
   </view>
 </view>
