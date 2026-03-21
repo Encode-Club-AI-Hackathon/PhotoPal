@@ -1,5 +1,7 @@
 //index.js
 const app = getApp();
+const luffa = require("../../utils/luffa");
+const { defaultIcon } = require("../../utils/icon");
 const { defaultSettingsIcon } = require("../../utils/settings_icon");
 
 Page({
