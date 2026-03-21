@@ -36,5 +36,6 @@
     <button class="secondary-btn" wx:if="{{walletConnected && hasPhotographerProfile}}" bindtap="goToProfile">View My Profile</button>
 
     <button class="secondary-btn" wx:if="{{walletConnected}}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
+    <button class="secondary-btn" bindtap="handleLogin">Login</button>
   </view>
 </view>

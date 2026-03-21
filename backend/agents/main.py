@@ -37,6 +37,14 @@ def get_single_row(table: str, key: str, value: Any) -> dict[str, Any]:
 		raise ValueError(f"No row found in '{table}' where {key}={value}.")
 	return rows[0]
 
+def set_single_row(table: str, key: str, value: Any, data: dict[str, Any]) -> dict[str, Any]:
+	existing = get_single_row(table, key, value)
+	if existing:
+		response = supabase.table(table).update(data).eq(key, value).execute()
+	else:
+		response = supabase.table(table).insert({**data, key: value}).execute()
+	return response.data
+
 
 async def run_and_store(
 	*,
