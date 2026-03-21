@@ -2,6 +2,11 @@
 //app.js
 App({
   onLaunch: function () {
+    var savedWallet = wx.getStorageSync('wallet')
+    if (savedWallet) {
+      this.globalData.wallet = savedWallet
+    }
+
     // show localstorage
     let logs = wx.getStorageSync('logs') || []
     logs.unshift(Date.now())
@@ -29,6 +34,7 @@ App({
     })
   },
   globalData: {
-    userInfo: null
+    userInfo: null,
+    wallet: null
   }
 })
