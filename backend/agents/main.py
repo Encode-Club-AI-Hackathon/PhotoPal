@@ -128,7 +128,7 @@ async def run_lead_finder(profile_id: int) -> dict[str, Any]:
 	)
 
 
-async def run_portfolio_analyser(website_url: str, instagram_handle: str | None) -> dict[str, Any]:
+async def run_portfolio_analyser(website_url: str, instagram_handle: str | None, uid: str | None = None) -> dict[str, Any]:
 	try:
 		from .portfolio_analyser import (
 			create_agent,
@@ -148,6 +148,11 @@ async def run_portfolio_analyser(website_url: str, instagram_handle: str | None)
 
 	prompt = build_prompt(website_url, instagram_handle)
 
+	def portfolio_row_transform(row: dict[str, Any]) -> dict[str, Any]:
+		if uid:
+			row["uid"] = uid
+		return row
+
 	return await run_and_store(
 		create_agent=create_agent,
 		prompt=prompt,
@@ -155,6 +160,7 @@ async def run_portfolio_analyser(website_url: str, instagram_handle: str | None)
 		results_key=RESULTS_KEY,
 		target_table=TARGET_TABLE,
 		thread_id="portfolio-analyser-session",
+		row_transform=portfolio_row_transform,
 	)
 
 
@@ -202,6 +208,7 @@ async def main(
 	business_id: int | None,
 	website_url: str | None,
 	instagram_handle: str | None,
+	uid: str | None,
 ) -> dict[str, Any] | None:
 	if agent in {"lead-finder", "all"}:
 		if profile_id is None:
@@ -212,7 +219,7 @@ async def main(
 	if agent in {"portfolio-analyser", "all"}:
 		if not website_url:
 			raise ValueError("portfolio-analyser requires --website-url")
-		result = await run_portfolio_analyser(website_url, instagram_handle)
+		result = await run_portfolio_analyser(website_url, instagram_handle, uid)
 		if agent != "all":
 			return result
 	if agent in {"business-outreach", "all"}:
@@ -238,6 +245,7 @@ if __name__ == "__main__":
 	parser.add_argument("--business-id", type=int, help="businesses.id")
 	parser.add_argument("--website-url", type=str, help="Portfolio website URL")
 	parser.add_argument("--instagram-handle", type=str, help="Instagram handle without @")
+	parser.add_argument("--uid", type=str, help="Wallet UID")
 	args = parser.parse_args()
 	asyncio.run(
 		main(
@@ -246,5 +254,6 @@ if __name__ == "__main__":
 			business_id=args.business_id,
 			website_url=args.website_url,
 			instagram_handle=args.instagram_handle,
+			uid=args.uid,
 		)
 	)
