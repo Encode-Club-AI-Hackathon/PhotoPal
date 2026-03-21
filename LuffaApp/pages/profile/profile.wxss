@@ -52,6 +52,7 @@
 .primary-btn {
   width: 100%;
   margin: 0;
+  font-size: 24rpx;
   background: #0f2a57;
   color: #ffffff;
 }
@@ -59,6 +60,7 @@
 .secondary-btn {
   width: 100%;
   margin: 0;
+  font-size: 24rpx;
   background: #ffffff;
   border: 2rpx solid #0f2a57;
   color: #0f2a57;
@@ -77,6 +79,24 @@
   border-bottom: 1rpx solid #edf1f6;
 }
 
+.kv-stack-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #edf1f6;
+}
+
+.kv-stack-label {
+  text-align: left;
+}
+
+.kv-stack-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .kv-key {
   font-size: 26rpx;
   color: #475467;
@@ -84,10 +104,16 @@
 
 .kv-value {
   flex: 1;
-  text-align: right;
   font-size: 26rpx;
   color: #182033;
   word-break: break-all;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.kv-value text {
+  text-align: right;
 }
 
 .button-row {
@@ -97,6 +123,31 @@
   gap: 14rpx;
 }
 
+.refresh-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.secondary-button {
+  width: 100%;
+  margin: 0;
+  border-radius: 16rpx;
+  background: #13294b;
+  border: 2rpx solid #13294b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-row-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .button-half {
   flex: 1;
   height: 84rpx;
@@ -104,4 +155,96 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.tag-yes {
+  display: inline-block;
+  padding: 6rpx 14rpx;
+  border-radius: 20rpx;
+  background: #e9f9ef;
+  color: #1d6b3b;
+  font-weight: 600;
+  font-size: 24rpx;
+  border: 1rpx solid #a9dfba;
+}
+
+.tag-no {
+  display: inline-block;
+  padding: 6rpx 14rpx;
+  border-radius: 20rpx;
+  background: #fff1f2;
+  color: #b42318;
+  font-weight: 600;
+  font-size: 24rpx;
+  border: 1rpx solid #fda4af;
+}
+
+.tags-container {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  justify-content: flex-start;
+}
+
+.tag-primary-niche {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  background: #13294b;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 24rpx;
+  border: 1rpx solid #0f2a57;
+}
+
+.tag-secondary-niche {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  font-size: 24rpx;
+  border: 1rpx solid #cbd5e1;
+}
+
+.instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid #f1d2e8;
+  background: #fff5fb;
+}
+
+.instagram-icon {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.instagram-handle {
+  color: #c13584;
+  font-weight: 600;
+}
+
+.email-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid #000000;
+  background: #ffffff;
+}
+
+.email-icon {
+  width: 30rpx;
+  height: 30rpx;
+  filter: grayscale(100%);
+}
+
+.email-text {
+  color: #111111;
+  font-weight: 600;
 }
