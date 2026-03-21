@@ -93,10 +93,24 @@ async def run_and_store(
 		}
 
 	if row_transform:
-		rows = [row_transform(row) for row in rows]
+		print(f"Applying row transform to {len(rows)} row(s)...")
+		try:
+			rows = [row_transform(row) for row in rows]
+			print(f"Row transform completed. Rows after transform:")
+			print(json.dumps(rows, indent=2, default=str))
+		except Exception as e:
+			print(f"ERROR during row_transform: {e}")
+			raise
 
-	supabase.table(target_table).insert(rows).execute()
-	print(f"Inserted {len(rows)} row(s) into '{target_table}'.")
+	print(f"Inserting {len(rows)} row(s) into '{target_table}'...")
+	try:
+		response = supabase.table(target_table).insert(rows).execute()
+		print(f"Supabase insert response: {response}")
+		print(f"Inserted {len(rows)} row(s) into '{target_table}'.")
+	except Exception as e:
+		print(f"ERROR during Supabase insert: {e}")
+		raise
+	
 	return {
 		"ok": True,
 		"target_table": target_table,
@@ -136,7 +150,7 @@ async def run_lead_finder(profile_id: int) -> dict[str, Any]:
 	)
 
 
-async def run_portfolio_analyser(website_url: str, instagram_handle: str | None, uid: str | None = None) -> dict[str, Any]:
+async def run_portfolio_analyser(website_url: str, instagram_handle: str | None, photographer_id: str | None = None) -> dict[str, Any]:
 	try:
 		from .portfolio_analyser import (
 			create_agent,
@@ -157,8 +171,8 @@ async def run_portfolio_analyser(website_url: str, instagram_handle: str | None,
 	prompt = build_prompt(website_url, instagram_handle)
 
 	def portfolio_row_transform(row: dict[str, Any]) -> dict[str, Any]:
-		if uid:
-			row["photographer_id"] = uid
+		if photographer_id:
+			row["photographer_id"] = photographer_id
 		return row
 
 	return await run_and_store(
@@ -216,7 +230,7 @@ async def main(
 	business_id: int | None,
 	website_url: str | None,
 	instagram_handle: str | None,
-	uid: str | None,
+	photographer_id: str | None,
 ) -> dict[str, Any] | None:
 	if agent in {"lead-finder", "all"}:
 		if profile_id is None:
@@ -227,7 +241,7 @@ async def main(
 	if agent in {"portfolio-analyser", "all"}:
 		if not website_url:
 			raise ValueError("portfolio-analyser requires --website-url")
-		result = await run_portfolio_analyser(website_url, instagram_handle, uid)
+		result = await run_portfolio_analyser(website_url, instagram_handle, photographer_id)
 		if agent != "all":
 			return result
 	if agent in {"business-outreach", "all"}:
@@ -253,7 +267,7 @@ if __name__ == "__main__":
 	parser.add_argument("--business-id", type=int, help="businesses.id")
 	parser.add_argument("--website-url", type=str, help="Portfolio website URL")
 	parser.add_argument("--instagram-handle", type=str, help="Instagram handle without @")
-	parser.add_argument("--uid", type=str, help="Wallet UID")
+	parser.add_argument("--photographer-id", type=str, help="Photographer ID (wallet UID)")
 	args = parser.parse_args()
 	asyncio.run(
 		main(
@@ -262,6 +276,6 @@ if __name__ == "__main__":
 			business_id=args.business_id,
 			website_url=args.website_url,
 			instagram_handle=args.instagram_handle,
-			uid=args.uid,
+			photographer_id=getattr(args, 'photographer_id', None),
 		)
 	)
