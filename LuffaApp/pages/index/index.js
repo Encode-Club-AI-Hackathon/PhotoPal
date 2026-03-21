@@ -4,7 +4,6 @@ const luffa = require("../../utils/luffa");
 const { defaultIcon } = require("../../utils/icon");
 const { defaultSettingsIcon } = require("../../utils/settings_icon");
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require("../../config/supabase");
-const { AGENT_API_BASE_URL, getAgentRequestHeaders } = require("../../config/agent_api");
 
 function buildWalletFromPayload(payload) {
   const data = payload || {};
@@ -21,6 +20,16 @@ function buildWalletFromPayload(payload) {
 const API_BASE = "https://grizzly-organic-kingfish.ngrok-free.app";
 const AUTH_SESSION_STORAGE_KEY = "pendingAuthSession";
 const AUTH_TOKEN_TTL_MS = 15 * 60 * 1000;
+
+function requestAsync(options) {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      ...options,
+      success: resolve,
+      fail: reject,
+    });
+  });
+}
 
 Page({
   data: {
@@ -443,52 +452,81 @@ Page({
       return;
     }
 
-    if (!AGENT_API_BASE_URL) {
-      wx.showToast({ title: "Set LUFFA_AGENT_API_BASE_URL", icon: "none" });
+    this.setData({ loadingGmailSubjects: true });
+
+    const auth = app.globalData.auth || wx.getStorageSync("auth") || {};
+    const accessToken = auth.accessToken || "";
+    if (!accessToken) {
+      this.setData({ loadingGmailSubjects: false });
+      wx.showToast({ title: "Missing access token", icon: "none" });
       return;
     }
 
-    this.setData({ loadingGmailSubjects: true });
-
-    wx.request({
-      url: `${AGENT_API_BASE_URL}/agents/gmail-recent-subjects`,
-      method: "POST",
-      header: getAgentRequestHeaders(),
-      success: (res) => {
-        if (!(res.statusCode >= 200 && res.statusCode < 300)) {
-          const detail = (res.data && (res.data.detail || res.data.error)) || "Request failed";
-          wx.showToast({ title: `${detail}`.slice(0, 30), icon: "none" });
-          return;
+    requestAsync({
+      url: "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+      method: "GET",
+      header: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      data: {
+        maxResults: 5,
+      },
+    })
+      .then((listRes) => {
+        if (!(listRes.statusCode >= 200 && listRes.statusCode < 300)) {
+          const detail = (listRes.data && (listRes.data.error_description || listRes.data.error)) || "Gmail request failed";
+          throw new Error(String(detail));
         }
 
-        const subjects =
-          (res.data && res.data.data && Array.isArray(res.data.data.email_subjects) && res.data.data.email_subjects) ||
-          (res.data && Array.isArray(res.data.email_subjects) && res.data.email_subjects) ||
-          [];
-
-        if (!subjects.length) {
+        const messages = (listRes.data && listRes.data.messages) || [];
+        if (!messages.length) {
           wx.showToast({ title: "No emails found", icon: "none" });
+          return [];
+        }
+
+        const requests = messages.slice(0, 5).map((msg) =>
+          requestAsync({
+            url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
+            method: "GET",
+            header: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            data: {
+              format: "metadata",
+              metadataHeaders: "Subject",
+            },
+          }),
+        );
+
+        return Promise.all(requests);
+      })
+      .then((messageResponses) => {
+        if (!Array.isArray(messageResponses) || !messageResponses.length) {
           return;
         }
 
-        const lines = subjects
-          .slice(0, 5)
-          .map((item, index) => `${index + 1}. ${(item && item.subject) || "(No subject)"}`)
-          .join("\n");
+        const subjects = messageResponses
+          .map((res) => {
+            const headers = (res.data && res.data.payload && res.data.payload.headers) || [];
+            const subjectHeader = headers.find((h) => (h.name || "").toLowerCase() === "subject");
+            return (subjectHeader && subjectHeader.value) || "(No subject)";
+          })
+          .slice(0, 5);
 
+        const lines = subjects.map((subject, index) => `${index + 1}. ${subject}`).join("\n");
         wx.showModal({
           title: "Last 5 Email Subjects",
           content: lines,
           showCancel: false,
         });
-      },
-      fail: () => {
-        wx.showToast({ title: "API unreachable", icon: "none" });
-      },
-      complete: () => {
+      })
+      .catch((err) => {
+        const msg = String((err && err.message) || "Gmail request failed").slice(0, 30);
+        wx.showToast({ title: msg || "Request failed", icon: "none" });
+      })
+      .finally(() => {
         this.setData({ loadingGmailSubjects: false });
-      },
-    });
+      });
   },
 
   onHide: function () {

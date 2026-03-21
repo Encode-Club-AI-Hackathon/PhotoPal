@@ -233,47 +233,18 @@ async def run_business_outreach(business_id: int, profile_id: int, civic_access_
 	)
 
 
-async def run_gmail_recent_subjects(civic_access_token: str | None = None) -> dict[str, Any]:
+async def run_gmail_recent_subjects(access_token: str | None = None) -> dict[str, Any]:
 	try:
-		from .gmail_recent_subjects import (
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-		)
+		from .gmail_recent_subjects import fetch_recent_email_subjects
 	except ImportError:
-		from gmail_recent_subjects import (  # type: ignore
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-		)
+		from gmail_recent_subjects import fetch_recent_email_subjects  # type: ignore
 
-	agent = await create_agent(civic_access_token=civic_access_token)
-	prompt = build_prompt()
-	config = {"configurable": {"thread_id": "gmail-recent-subjects-session"}}
+	if not access_token:
+		access_token = os.getenv("GOOGLE_ACCESS_TOKEN")
+	if not access_token:
+		raise ValueError("Missing Google access token (pass access_token or set GOOGLE_ACCESS_TOKEN)")
 
-	result = await agent.ainvoke(
-		{"messages": [{"role": "user", "content": prompt}]},
-		config=config,
-	)
-
-	structured_data = extract_submit_payload(result, SUBMIT_TOOL_NAME)
-	if not structured_data:
-		last_message = result["messages"][-1]
-		return {
-			"ok": False,
-			"inserted_count": 0,
-			"error": "Agent did not call submit tool",
-			"raw_response": last_message.content,
-		}
-
-	rows = structured_data.get(RESULTS_KEY, [])
-	return {
-		"ok": True,
-		"inserted_count": len(rows),
-		"data": structured_data,
-	}
+	return await fetch_recent_email_subjects(access_token=access_token)
 
 
 async def main(

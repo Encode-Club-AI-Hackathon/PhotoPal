@@ -3,7 +3,9 @@ import time
 import uuid
 from threading import Lock
 from typing import Any, Dict, Optional
+from urllib.parse import urlencode
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
@@ -25,6 +27,13 @@ CIVIC_POST_LOGOUT_REDIRECT_URL = os.getenv("CIVIC_POST_LOGOUT_REDIRECT_URL")
 DEVICE_SESSION_TTL_SEC = int(os.getenv("DEVICE_SESSION_TTL_SEC", "600"))
 DEVICE_POLL_INTERVAL_SEC = int(os.getenv("DEVICE_POLL_INTERVAL_SEC", "3"))
 DEVICE_SESSION_COOKIE = "device_session_id"
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
+GOOGLE_OAUTH_REDIRECT_URL = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URL",
+    (f"{PUBLIC_BASE_URL}/auth/google/callback" if PUBLIC_BASE_URL else "http://localhost:8000/auth/google/callback"),
+)
+CIVIC_CLIENT_SECRET = os.getenv("CIVIC_CLIENT_SECRET", "")
 
 
 def _parse_scopes(raw: str | None, default: list[str]) -> list[str]:
@@ -32,6 +41,17 @@ def _parse_scopes(raw: str | None, default: list[str]) -> list[str]:
         return default
     normalized = raw.replace(",", " ").split()
     return [scope.strip() for scope in normalized if scope.strip()]
+
+
+GOOGLE_SCOPES = _parse_scopes(
+    os.getenv("GOOGLE_SCOPES"),
+    [
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/gmail.readonly",
+    ],
+)
 
 
 DEFAULT_SCOPES = [
@@ -129,6 +149,30 @@ def _cleanup_expired_sessions() -> None:
         for sid, s in list(_device_sessions.items()):
             if s["status"] == "pending" and now >= s["expires_at"]:
                 s["status"] = "expired"
+
+
+_google_oauth_states: Dict[str, Dict[str, Any]] = {}
+
+
+def _cleanup_expired_google_states() -> None:
+    now = _now()
+    for state, payload in list(_google_oauth_states.items()):
+        if now >= payload.get("expires_at", 0):
+            _google_oauth_states.pop(state, None)
+
+
+def _build_google_auth_url(state: str) -> str:
+    params = {
+        "client_id": GOOGLE_OAUTH_CLIENT_ID,
+        "redirect_uri": GOOGLE_OAUTH_REDIRECT_URL,
+        "response_type": "code",
+        "scope": " ".join(GOOGLE_SCOPES),
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+    }
+    return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
 
 
 def _base_url_from_request(request: Request) -> str:
@@ -323,6 +367,7 @@ async def auth_device_start(payload: DeviceStartRequest, request: Request):
             "user_code": user_code,
             "access_token": "",
             "refresh_token": "",
+            "id_token": "",
             "profile": {},
         }
 
@@ -351,10 +396,106 @@ async def auth_device_status(session_id: str):
             {
                 "access_token": session.get("access_token", ""),
                 "refresh_token": session.get("refresh_token", ""),
+                "id_token": session.get("id_token", ""),
                 "profile": session.get("profile", {}),
+                "provider": session.get("provider", ""),
             }
         )
     return resp
+
+
+@app.get("/auth/google/login")
+async def auth_google_login(request: Request, session_id: Optional[str] = None):
+    if not GOOGLE_OAUTH_CLIENT_ID or not GOOGLE_OAUTH_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Missing GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET")
+
+    _cleanup_expired_sessions()
+    _cleanup_expired_google_states()
+
+    cookie_session_id = request.cookies.get(DEVICE_SESSION_COOKIE)
+    active_session_id = session_id or cookie_session_id
+    if not active_session_id:
+        raise HTTPException(status_code=400, detail="Missing session_id for device login")
+
+    with _device_lock:
+        session = _device_sessions.get(active_session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+    if session["status"] == "expired":
+        raise HTTPException(status_code=400, detail="Session expired")
+
+    state = uuid.uuid4().hex
+    _google_oauth_states[state] = {
+        "session_id": active_session_id,
+        "expires_at": _now() + DEVICE_SESSION_TTL_SEC,
+    }
+    return RedirectResponse(url=_build_google_auth_url(state), status_code=302)
+
+
+@app.get("/auth/google/callback")
+async def auth_google_callback(code: str, state: str):
+    _cleanup_expired_sessions()
+    _cleanup_expired_google_states()
+
+    state_payload = _google_oauth_states.pop(state, None)
+    if not state_payload:
+        raise HTTPException(status_code=400, detail="Invalid or expired state")
+
+    session_id = state_payload["session_id"]
+    with _device_lock:
+        session = _device_sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        token_response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_OAUTH_CLIENT_ID,
+                "client_secret": GOOGLE_OAUTH_CLIENT_SECRET,
+                "redirect_uri": GOOGLE_OAUTH_REDIRECT_URL,
+                "grant_type": "authorization_code",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        if token_response.status_code != 200:
+            raise HTTPException(status_code=400, detail=f"Google token exchange failed: {token_response.text}")
+
+        token_json = token_response.json()
+        access_token = token_json.get("access_token", "")
+        refresh_token = token_json.get("refresh_token", "")
+        id_token = token_json.get("id_token", "")
+
+        profile: Dict[str, Any] = {}
+        if access_token:
+            profile_response = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if profile_response.status_code == 200:
+                profile = profile_response.json()
+
+    with _device_lock:
+        session = _device_sessions.get(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Unknown session_id")
+        session["status"] = "approved"
+        session["provider"] = "google"
+        session["access_token"] = access_token
+        session["refresh_token"] = refresh_token
+        session["id_token"] = id_token
+        session["profile"] = profile
+
+    return HTMLResponse(
+        _render_auth_page(
+            title="Google login complete",
+            subtitle="Return to the mini app. It will continue polling and complete sign in automatically.",
+            status_badge="Success",
+        )
+    )
 
 
 @app.get(
@@ -380,10 +521,10 @@ async def auth_device_verify(session_id: str):
 
     html = _render_auth_page(
         title="Sign in to PhotoPal",
-        subtitle="This opens Google authentication in a secure browser tab. Once complete, return to the mini app.",
+        subtitle="This opens Google OAuth in a secure browser tab for Gmail access. Once complete, return to the mini app.",
         status_badge="Secure Browser",
         primary_label="Continue with Google",
-        primary_href="/auth/login",
+        primary_href=f"/auth/google/login?session_id={session_id}",
         # code=session.get("user_code") or None,
     )
     response = HTMLResponse(html)
@@ -453,6 +594,35 @@ async def tokens(request: Request, civic=Depends(civic_auth_dep)):
     print(f"Body: {await request.body()}")
     # set_single_row("auth_tokens", "id", "civic", {"access_token": tokens["access_token"]})
     return tokens
+
+
+class CivicTokenExchangeRequest(BaseModel):
+    subject_token: str
+
+
+@app.post("/auth/civic/exchange")
+async def civic_token_exchange(payload: CivicTokenExchangeRequest):
+    if not CLIENT_ID or not CIVIC_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Missing CIVIC_CLIENT_ID or CIVIC_CLIENT_SECRET")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            "https://auth.civic.com/oauth/token",
+            data={
+                "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+                "client_id": CLIENT_ID,
+                "client_secret": CIVIC_CLIENT_SECRET,
+                "subject_token": payload.subject_token,
+                "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+                "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=400, detail=f"Civic token exchange failed: {response.text}")
+
+    return response.json()
 
 
 # Auth tokens sql schema:
