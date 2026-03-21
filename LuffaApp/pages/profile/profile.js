@@ -1,80 +1,111 @@
 const app = getApp()
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = require('../../config/supabase')
+
+function normalizeUrl(url) {
+  const raw = (url || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+  return `https://${raw}`
+}
+
+function formatSecondaryNiches(niches) {
+  if (Array.isArray(niches)) return niches.filter(Boolean).join(', ')
+  return `${niches || ''}`.trim()
+}
 
 Page({
   data: {
-    title: 'Profile',
+    title: 'My Profile',
     loadingProfile: false,
     profileError: '',
-    userInfo: {},
-    hasUserInfo: false,
-    authSetting: {},
-    accountInfo: {},
-    sessionStatus: 'Unknown',
-    rawProfile: ''
+    walletConnected: false,
+    walletUid: '',
+    walletAddress: '',
+    hasPhotographerProfile: false,
+    photographerProfile: null
   },
   onLoad: function () {
-    this.refreshAvailableInfo()
+    this.refreshProfileData()
   },
   onShow: function () {
-    this.refreshAvailableInfo()
+    this.refreshProfileData()
   },
-  refreshAvailableInfo: function () {
-    const currentUser = app.globalData.userInfo || {}
+  refreshProfileData: function () {
+    const wallet = app.globalData.wallet || {}
+    const walletConnected = !!wallet.address
+    const walletUid = wallet.uid || ''
+
     this.setData({
-      userInfo: currentUser,
-      hasUserInfo: !!currentUser.nickName
+      walletConnected,
+      walletUid,
+      walletAddress: wallet.address || '',
+      profileError: ''
     })
 
-    wx.getSetting({
-      success: (res) => {
-        this.setData({
-          authSetting: res.authSetting || {}
-        })
-      }
-    })
-
-    try {
-      const account = wx.getAccountInfoSync()
+    if (!walletConnected || !walletUid) {
       this.setData({
-        accountInfo: (account && account.miniProgram) || {}
+        hasPhotographerProfile: false,
+        photographerProfile: null,
+        profileError: walletConnected ? 'Wallet UID missing.' : 'Connect wallet to view profile.'
       })
-    } catch (err) {
-      this.setData({
-        accountInfo: {}
-      })
+      return
     }
 
-    wx.checkSession({
-      success: () => {
-        this.setData({ sessionStatus: 'Valid' })
-      },
-      fail: () => {
-        this.setData({ sessionStatus: 'Expired' })
-      }
-    })
-  },
-  getUserProfile: function () {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_URL.includes('supabase.co')) {
+      this.setData({
+        hasPhotographerProfile: false,
+        photographerProfile: null,
+        profileError: 'Supabase config missing.'
+      })
+      return
+    }
+
     this.setData({
       loadingProfile: true,
       profileError: ''
     })
 
-    wx.getUserProfile({
-      desc: 'Used to display your profile details in PhotoPal.',
-      lang: 'en',
+    wx.request({
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?uid=eq.${encodeURIComponent(walletUid)}&select=uid,name,primary_niche,contact_email,website_url,instagram_handle,secondary_niches,human_presence,location_city,location_country,willingness_to_travel,studio_access&limit=1`,
+      method: 'GET',
+      header: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
       success: (res) => {
-        const info = res.userInfo || {}
-        app.globalData.userInfo = info
+        const row = Array.isArray(res.data) && res.data.length ? res.data[0] : null
+        if (!row) {
+          this.setData({
+            hasPhotographerProfile: false,
+            photographerProfile: null,
+            profileError: 'No profile found yet. Complete profile analysis first.'
+          })
+          return
+        }
 
         this.setData({
-          userInfo: info,
-          hasUserInfo: !!info.nickName,
-          rawProfile: JSON.stringify(res, null, 2)
+          hasPhotographerProfile: true,
+          photographerProfile: {
+            uid: row.uid || '',
+            name: row.name || '',
+            primaryNiche: row.primary_niche || '',
+            contactEmail: row.contact_email || '',
+            websiteUrl: normalizeUrl(row.website_url || ''),
+            instagramHandle: row.instagram_handle || '',
+            secondaryNiches: formatSecondaryNiches(row.secondary_niches),
+            humanPresence: row.human_presence === null || row.human_presence === undefined ? '' : (row.human_presence ? 'Yes' : 'No'),
+            locationCity: row.location_city || '',
+            locationCountry: row.location_country || '',
+            willingnessToTravel: row.willingness_to_travel ? 'Yes' : 'No',
+            studioAccess: row.studio_access ? 'Yes' : 'No'
+          }
         })
       },
       fail: (err) => {
         this.setData({
-          profileError: (err && err.errMsg) || 'Failed to fetch profile information.'
+          hasPhotographerProfile: false,
+          photographerProfile: null,
+          profileError: (err && err.errMsg) || 'Failed to load profile.'
         })
       },
       complete: () => {
@@ -84,11 +115,16 @@ Page({
       }
     })
   },
-  openSettings: function () {
-    wx.openSetting({
-      success: () => {
-        this.refreshAvailableInfo()
-      }
+  openWebsite: function () {
+    const profile = this.data.photographerProfile || {}
+    const url = normalizeUrl(profile.websiteUrl || '')
+    if (!url) {
+      wx.showToast({ title: 'No portfolio URL', icon: 'none' })
+      return
+    }
+
+    wx.navigateTo({
+      url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
     })
   }
 })
