@@ -56,6 +56,38 @@
   color: #182033;
 }
 
+.primary-btn {
+  width: 100%;
+  margin: 0;
+  border-radius: 16rpx;
+  background: #13294b;
+  color: #ffffff;
+}
+
+.wallet-status-row {
+  width: 100%;
+  border-radius: 16rpx;
+  border: 2rpx solid #a9dfba;
+  background: #e9f9ef;
+  padding: 18rpx 22rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.wallet-status-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.wallet-status-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1d6b3b;
+}
+
 .secondary-btn {
   width: 100%;
   margin: 0;

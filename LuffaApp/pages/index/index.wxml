@@ -1,4 +1,9 @@
 <view class="container page">
+  <view class="wallet-status-row" wx:if="{{walletConnected}}">
+    <image class="wallet-status-icon" src="{{tickIcon}}" mode="aspectFit"></image>
+    <text class="wallet-status-title">Wallet Connected</text>
+  </view>
+
   <view class="hero-card">
     <text class="brand-label">{{title}}</text>
     <text class="welcome-title">Welcome, {{displayName}}</text>
@@ -7,6 +12,17 @@
 
   <view class="actions-card">
     <text class="section-title">Quick Actions</text>
+
+    <button
+      class="primary-btn"
+      wx:if="{{!walletConnected}}"
+      bindtap="onConnectWallet"
+      loading="{{connectingWallet}}"
+      disabled="{{connectingWallet}}"
+    >
+      {{connectingWallet ? 'Connecting Wallet...' : 'Connect Wallet'}}
+    </button>
+
     <button class="settings-row" bindtap="goToSettings">
       <view class="settings-row-left">
         <image class="settings-row-icon" src="{{settingsIcon}}" mode="aspectFit"></image>
@@ -14,6 +30,6 @@
       </view>
       <text class="settings-row-chevron">›</text>
     </button>
-    <button class="secondary-btn" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
+    <button class="secondary-btn" wx:if="{{walletConnected}}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
   </view>
 </view>
