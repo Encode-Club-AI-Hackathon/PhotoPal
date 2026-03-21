@@ -1,6 +1,17 @@
 <view class="container page">
-  <view class="wallet-status-row" wx:if="{{ walletConnected }}">
-    <image class="wallet-status-icon" src="{{ tickIcon }}" mode="aspectFit"></image>
+  <view class="top-links-row">
+    <button class="top-link-btn" bindtap="goToSettings">
+      <image class="top-link-icon" src="{{settingsIcon}}" mode="aspectFit"></image>
+      <text>Settings</text>
+    </button>
+    <button class="top-link-btn" bindtap="showAbout">
+      <image class="top-link-icon" src="{{infoIcon}}" mode="aspectFit"></image>
+      <text>About</text>
+    </button>
+  </view>
+
+  <view class="wallet-status-row" wx:if="{{walletConnected}}">
+    <image class="wallet-status-icon" src="{{tickIcon}}" mode="aspectFit"></image>
     <text class="wallet-status-title">Wallet Connected</text>
   </view>
 
@@ -10,32 +21,33 @@
     <text class="welcome-subtitle">{{ subtitle }}</text>
   </view>
 
-  <view class="actions-card">
-    <text class="section-title">Quick Actions</text>
-
-    <button class="primary-btn" wx:if="{{ !walletConnected }}" bindtap="onConnectWallet" loading="{{ connectingWallet }}" disabled="{{ connectingWallet }}">
-      {{ connectingWallet ? "Connecting Wallet..." : "Connect Wallet" }}
+  <view class="auth-center-wrap" wx:if="{{showAuthCenter}}">
+    <button
+      class="primary-btn auth-btn"
+      bindtap="onConnectWallet"
+      loading="{{connectingWallet}}"
+      disabled="{{connectingWallet}}"
+    >
+      {{connectingWallet ? 'Connecting Wallet...' : 'Connect Wallet'}}
     </button>
+  </view>
 
-    <button class="settings-row" bindtap="goToSettings">
-      <view class="settings-row-left">
-        <image class="settings-row-icon" src="{{ settingsIcon }}" mode="aspectFit"></image>
-        <text class="settings-row-text">Settings</text>
-      </view>
-      <text class="settings-row-chevron">›</text>
-    </button>
-
-    <button class="secondary-btn" wx:if="{{ walletConnected && !hasPhotographerProfile && !checkingProfile }}" bindtap="goToProfileIntake">
-      Complete Profile for Analysis
-    </button>
-
-    <button class="secondary-btn" wx:if="{{ walletConnected && hasPhotographerProfile }}" bindtap="goToProfile">View My Profile</button>
-
-    <button class="secondary-btn" wx:if="{{ walletConnected }}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
+  <view class="actions-wrap" wx:if="{{!showAuthCenter}}">
+    <button class="secondary-btn action-row-btn" wx:if="{{!walletConnected}}" bindtap="onConnectWallet" loading="{{connectingWallet}}" disabled="{{connectingWallet}}">{{connectingWallet ? 'Connecting Wallet...' : 'Connect Wallet'}}</button>
+    <button class="secondary-btn action-row-btn" wx:if="{{walletConnected && !hasPhotographerProfile && !checkingProfile}}" bindtap="goToProfileIntake">Complete Profile for Analysis</button>
+    <button class="secondary-btn action-row-btn" wx:if="{{walletConnected && hasPhotographerProfile}}" bindtap="goToSuggestedOpportunities">View Suggested Opportunities</button>
     <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects }}">
       {{ loadingGmailSubjects ? "Fetching Gmail Subjects..." : "Get Last 5 Gmail Subjects" }}
     </button>
-    <button class="secondary-btn" bindtap="handleLogin">Login</button>
+  </view>
+
+  <view class="google-connect-card" wx:if="{{!loggedIn}}">
+    <text class="google-connect-title">Want to seamlessly contact employers?</text>
+    <text class="google-connect-subtitle">Connect your Google account to streamline outreach and follow-ups.</text>
+    <button class="google-connect-btn" bindtap="handleLogin">
+      <image class="google-connect-icon" src="{{googleIcon}}" mode="aspectFit"></image>
+      <text>Connect</text>
+    </button>
     <button class="secondary-btn" bindtap="handleLogout">Logout</button>
   </view>
 </view>

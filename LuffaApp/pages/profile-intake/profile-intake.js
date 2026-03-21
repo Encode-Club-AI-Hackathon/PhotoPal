@@ -85,30 +85,47 @@ Page({
     step: "initial",
     submitting: false,
     saving: false,
-    name: "",
-    contactEmail: "",
-    locationCity: "",
-    locationCountry: "",
-    instagramHandle: "",
-    portfolioUrl: "",
-    primaryNiche: "",
-    secondaryNiches: "",
+    editMode: false,
+    name: '',
+    contactEmail: '',
+    locationCity: '',
+    locationCountry: '',
+    instagramHandle: '',
+    portfolioUrl: '',
+    primaryNiche: '',
+    secondaryNiches: '',
     humanPresence: false,
     willingToTravel: false,
     studioAccess: false,
     agentProfileOriginal: null,
   },
-  onLoad: function () {
+  onLoad: function (options) {
+    const editMode = options && options.mode === 'edit'
+    
+    if (editMode && options.profile) {
+      try {
+        const profile = JSON.parse(decodeURIComponent(options.profile))
+        this.populateEditForm(profile)
+      } catch (err) {
+        console.error('Failed to parse profile:', err)
+        this.resetForm()
+      }
+    } else {
+      this.resetForm()
+    }
+  },
+  resetForm: function () {
     this.setData({
-      step: "initial",
-      name: "",
-      contactEmail: "",
-      locationCity: "",
-      locationCountry: "",
-      instagramHandle: "",
-      portfolioUrl: "",
-      primaryNiche: "",
-      secondaryNiches: "",
+      step: 'initial',
+      editMode: false,
+      name: '',
+      contactEmail: '',
+      locationCity: '',
+      locationCountry: '',
+      instagramHandle: '',
+      portfolioUrl: '',
+      primaryNiche: '',
+      secondaryNiches: '',
       humanPresence: false,
       willingToTravel: false,
       studioAccess: false,
@@ -148,6 +165,35 @@ Page({
   onStudioChange: function (e) {
     this.setData({ studioAccess: !!e.detail.value });
   },
+  populateEditForm: function (profile) {
+    this.setData({
+      step: 'confirm',
+      editMode: true,
+      name: profile.name || '',
+      contactEmail: profile.contactEmail || '',
+      locationCity: profile.locationCity || '',
+      locationCountry: profile.locationCountry || '',
+      instagramHandle: profile.instagramHandle || '',
+      portfolioUrl: profile.websiteUrl || '',
+      primaryNiche: profile.primaryNiche || '',
+      secondaryNiches: (Array.isArray(profile.secondaryNiches) ? profile.secondaryNiches : (profile.secondaryNiches || '').split(',')).filter(Boolean).join(', '),
+      humanPresence: (profile.humanPresence === 'Yes' || profile.humanPresence === true),
+      willingToTravel: (profile.willingnessToTravel === 'Yes' || profile.willingnessToTravel === true),
+      studioAccess: (profile.studioAccess === 'Yes' || profile.studioAccess === true),
+      agentProfileOriginal: null
+    })
+  },
+  onNameInput: function (e) { this.setData({ name: e.detail.value }) },
+  onContactEmailInput: function (e) { this.setData({ contactEmail: e.detail.value }) },
+  onLocationCityInput: function (e) { this.setData({ locationCity: e.detail.value }) },
+  onLocationCountryInput: function (e) { this.setData({ locationCountry: e.detail.value }) },
+  onInstagramInput: function (e) { this.setData({ instagramHandle: e.detail.value }) },
+  onPortfolioUrlInput: function (e) { this.setData({ portfolioUrl: e.detail.value }) },
+  onPrimaryNicheInput: function (e) { this.setData({ primaryNiche: e.detail.value }) },
+  onSecondaryNichesInput: function (e) { this.setData({ secondaryNiches: e.detail.value }) },
+  onHumanPresenceChange: function (e) { this.setData({ humanPresence: !!e.detail.value }) },
+  onTravelChange: function (e) { this.setData({ willingToTravel: !!e.detail.value }) },
+  onStudioChange: function (e) { this.setData({ studioAccess: !!e.detail.value }) },
   onSubmit: function () {
     if (this.data.submitting || this.data.saving) return;
 

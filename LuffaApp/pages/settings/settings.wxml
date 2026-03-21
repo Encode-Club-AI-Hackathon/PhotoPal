@@ -9,14 +9,34 @@
     </button>
 
     <view class="wallet-card">
-      <text class="wallet-title">Wallet</text>
-      <text class="wallet-status">Status: {{connected ? 'Connected' : 'Not connected'}}</text>
-      <image class="wallet-avatar" wx:if="{{connected && avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"></image>
-      <text class="wallet-address" wx:if="{{connected}}">{{address}}</text>
-      <text class="wallet-meta" wx:if="{{connected && nickname}}">Name: {{nickname}}</text>
-      <text class="wallet-meta" wx:if="{{connected && uid}}">UID: {{uid}}</text>
-      <text class="wallet-meta" wx:if="{{connected && cid}}">CID: {{cid}}</text>
-      <text class="wallet-meta" wx:if="{{connected && avatarFrame}}">Avatar Frame: {{avatarFrame}}</text>
+      <view class="wallet-head">
+        <view class="wallet-head-left">
+          <image class="wallet-avatar" wx:if="{{connected && avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"></image>
+          <view class="wallet-avatar-fallback" wx:if="{{!(connected && avatarUrl)}}">
+            <text class="wallet-avatar-fallback-text">W</text>
+          </view>
+          <view class="wallet-head-copy">
+            <text class="wallet-title">{{connected && nickname ? nickname : 'Wallet'}}</text>
+            <text class="wallet-status {{connected ? 'wallet-status-on' : 'wallet-status-off'}}">{{connected ? 'Connected' : 'Not connected'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="wallet-details" wx:if="{{connected}}">
+        <view class="wallet-detail-item" wx:if="{{uid}}">
+          <text class="wallet-detail-label">UID</text>
+          <text class="wallet-detail-value">{{uid}}</text>
+        </view>
+        <view class="wallet-detail-item" wx:if="{{cid}}">
+          <text class="wallet-detail-label">CID</text>
+          <text class="wallet-detail-value">{{cid}}</text>
+        </view>
+      </view>
+
+      <view class="wallet-detail-item wallet-address-item" wx:if="{{connected}}">
+        <text class="wallet-detail-label">Address</text>
+        <text class="wallet-address">{{address}}</text>
+      </view>
 
       <button class="wallet-btn wallet-connect" wx:if="{{!connected}}" bindtap="onConnectWallet" loading="{{connecting}}" disabled="{{connecting}}">
         {{connecting ? 'Connecting...' : 'Connect Wallet'}}

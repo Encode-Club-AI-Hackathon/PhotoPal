@@ -1,6 +1,9 @@
 const app = getApp()
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require('../../config/supabase')
 
+const INSTAGRAM_BASE_URL = 'https://www.instagram.com/'
+const GMAIL_COMPOSE_BASE_URL = 'https://mail.google.com/mail/?view=cm&fs=1&to='
+
 function normalizeUrl(url) {
   const raw = (url || '').trim()
   if (!raw) return ''
@@ -13,9 +16,63 @@ function formatSecondaryNiches(niches) {
   return `${niches || ''}`.trim()
 }
 
+// Country to flag emoji mapping
+const countryFlags = {
+  'US': '🇺🇸', 'UK': '🇬🇧', 'CA': '🇨🇦', 'AU': '🇦🇺', 'NZ': '🇳🇿',
+  'GB': '🇬🇧', 'DE': '🇩🇪', 'FR': '🇫🇷', 'IT': '🇮🇹', 'ES': '🇪🇸',
+  'JP': '🇯🇵', 'CN': '🇨🇳', 'IN': '🇮🇳', 'BR': '🇧🇷', 'MX': '🇲🇽',
+  'ZA': '🇿🇦', 'SG': '🇸🇬', 'NL': '🇳🇱', 'SE': '🇸🇪', 'CH': '🇨🇭',
+  'Ireland': '🇮🇪', 'Netherlands': '🇳🇱', 'Belgium': '🇧🇪', 'Austria': '🇦🇹',
+  'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Norway': '🇳🇴', 'Poland': '🇵🇱',
+  'Greece': '🇬🇷', 'Portugal': '🇵🇹', 'Czech': '🇨🇿', 'Hungary': '🇭🇺',
+  'Romania': '🇷🇴', 'Bulgaria': '🇧🇬', 'Croatia': '🇭🇷', 'Slovenia': '🇸🇮',
+  'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Philippines': '🇵🇭', 'Malaysia': '🇲🇾',
+  'Indonesia': '🇮🇩', 'Pakistan': '🇵🇰', 'Bangladesh': '🇧🇩', 'UAE': '🇦🇪',
+  'Saudi Arabia': '🇸🇦', 'Turkey': '🇹🇷', 'Israel': '🇮🇱', 'South Korea': '🇰🇷',
+  'Argentina': '🇦🇷', 'Chile': '🇨🇱', 'Colombia': '🇨🇴', 'Peru': '🇵🇪',
+  'Venezuela': '🇻🇪', 'Ecuador': '🇪🇨', 'United States': '🇺🇸', 'United Kingdom': '🇬🇧',
+  'Canada': '🇨🇦', 'Australia': '🇦🇺', 'New Zealand': '🇳🇿', 'Germany': '🇩🇪',
+  'France': '🇫🇷', 'Italy': '🇮🇹', 'Spain': '🇪🇸', 'Japan': '🇯🇵',
+  'China': '🇨🇳', 'India': '🇮🇳', 'Brazil': '🇧🇷', 'Mexico': '🇲🇽',
+  'South Africa': '🇿🇦', 'Singapore': '🇸🇬'
+}
+
+function getCountryDisplay(country) {
+  if (!country) return ''
+  const flag = countryFlags[country] || ''
+  return flag ? `${flag} ${country}` : country
+}
+
+function cleanInstagramHandle(handle) {
+  const raw = `${handle || ''}`.trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) {
+    const match = raw.match(/instagram\.com\/([^/?#]+)/i)
+    return match && match[1] ? match[1].replace(/^@+/, '').trim() : ''
+  }
+  return raw.replace(/^@+/, '').trim()
+}
+
+function getInstagramUrl(handle) {
+  const clean = cleanInstagramHandle(handle)
+  return clean ? `${INSTAGRAM_BASE_URL}${encodeURIComponent(clean)}/` : ''
+}
+
+function cleanEmail(value) {
+  return `${value || ''}`.trim()
+}
+
+function getEmailComposeUrl(email) {
+  const clean = cleanEmail(email)
+  if (!clean) return ''
+  return `${GMAIL_COMPOSE_BASE_URL}${encodeURIComponent(clean)}`
+}
+
 Page({
   data: {
     title: 'My Profile',
+    instagramIcon: '/utils/instagram_icon.png',
+    emailIcon: '/utils/email_icon.png',
     loadingProfile: false,
     profileError: '',
     walletConnected: false,
@@ -93,9 +150,11 @@ Page({
             websiteUrl: normalizeUrl(row.website_url || ''),
             instagramHandle: row.instagram_handle || '',
             secondaryNiches: formatSecondaryNiches(row.secondary_niches),
+            secondaryNichesList: (row.secondary_niches || []).filter(Boolean),
             humanPresence: row.human_presence === null || row.human_presence === undefined ? '' : (row.human_presence ? 'Yes' : 'No'),
             locationCity: row.location_city || '',
             locationCountry: row.location_country || '',
+            countryDisplay: getCountryDisplay(row.location_country || ''),
             willingnessToTravel: row.willingness_to_travel ? 'Yes' : 'No',
             studioAccess: row.studio_access ? 'Yes' : 'No'
           }
@@ -125,6 +184,38 @@ Page({
 
     wx.navigateTo({
       url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+    })
+  },
+  openInstagram: function () {
+    const profile = this.data.photographerProfile || {}
+    const url = getInstagramUrl(profile.instagramHandle)
+    if (!url) {
+      wx.showToast({ title: 'No Instagram account', icon: 'none' })
+      return
+    }
+
+    wx.navigateTo({
+      url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+    })
+  },
+  openEmail: function () {
+    const profile = this.data.photographerProfile || {}
+    const email = cleanEmail(profile.contactEmail)
+    const url = getEmailComposeUrl(email)
+    if (!email || !url) {
+      wx.showToast({ title: 'No email address', icon: 'none' })
+      return
+    }
+
+    wx.navigateTo({
+      url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+    })
+  },
+  goToEditProfile: function () {
+    const profile = this.data.photographerProfile || {}
+    const encodedProfile = encodeURIComponent(JSON.stringify(profile))
+    wx.navigateTo({
+      url: `/pages/profile-intake/profile-intake?mode=edit&profile=${encodedProfile}`
     })
   }
 })

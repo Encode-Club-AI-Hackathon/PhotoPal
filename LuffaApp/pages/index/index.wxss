@@ -6,16 +6,46 @@
   flex-direction: column;
   gap: 28rpx;
   background: linear-gradient(160deg, #fff8ef 0%, #f4f7ff 100%);
+  justify-content: flex-start;
 }
 
-.hero-card,
-.actions-card {
+.hero-card {
   width: 100%;
   padding: 36rpx;
   box-sizing: border-box;
   border-radius: 26rpx;
   background: #ffffff;
   box-shadow: 0 10rpx 24rpx rgba(20, 28, 40, 0.08);
+}
+
+.top-links-row {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 14rpx;
+}
+
+.top-link-btn {
+  flex: 1;
+  height: 70rpx;
+  margin: 0;
+  border-radius: 14rpx;
+  border: 2rpx solid #d7deec;
+  background: #ffffff;
+  color: #13294b;
+  font-size: 26rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 0 16rpx;
+}
+
+.top-link-icon {
+  width: 28rpx;
+  height: 128rpx;
+  color: #13294b;
 }
 
 .hero-card {
@@ -44,10 +74,26 @@
   color: #44516a;
 }
 
-.actions-card {
+.actions-wrap,
+.auth-center-wrap {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+}
+
+.auth-center-wrap {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  flex-direction: row;
+}
+
+.auth-btn {
+  flex: 1;
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .section-title {
@@ -62,6 +108,9 @@
   border-radius: 16rpx;
   background: #13294b;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wallet-status-row {
@@ -95,43 +144,58 @@
   background: #ffffff;
   border: 2rpx solid #13294b;
   color: #13294b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.settings-row {
+.action-row-btn {
   width: 100%;
-  height: 92rpx;
-  line-height: 92rpx;
-  margin: 0;
-  padding: 0 24rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #d7deec;
-  background: #ffffff;
-  color: #13294b;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
-.settings-row-left {
+.google-connect-card {
+  width: 100%;
+  border-radius: 20rpx;
+  border: 2rpx solid #e0e7ff;
+  background: #f8faff;
+  padding: 26rpx;
+  box-sizing: border-box;
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
   gap: 14rpx;
 }
 
-.settings-row-icon {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-.settings-row-text {
+.google-connect-title {
   font-size: 28rpx;
-  font-weight: 600;
+  font-weight: 700;
+  color: #182033;
 }
 
-.settings-row-chevron {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #7b89a1;
+.google-connect-subtitle {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #44516a;
+}
+
+.google-connect-btn {
+  width: 100%;
+  margin: 0;
+  height: 84rpx;
+  border-radius: 14rpx;
+  border: 2rpx solid #cbd5e1;
+  background: #ffffff;
+  color: #13294b;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.google-connect-icon {
+  width: 34rpx;
+  height: 34rpx;
 }

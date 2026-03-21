@@ -5,6 +5,7 @@ Page({
   data: {
     title: 'Suggested Opportunities',
     leads: [],
+    activeContactLeadKey: '',
     loading: false,
     errorMessage: ''
   },
@@ -37,6 +38,7 @@ Page({
             const location = this.parseCoordinates(item.lat, item.lon, index)
             return {
               id: item.id || item.website || `lead-${index}`,
+              leadKey: `${item.id || item.website || 'lead'}-${index}`,
               website: item.website || '',
               businessName: item.business_name || 'Untitled Business',
               type: item.type || 'General',
@@ -48,14 +50,14 @@ Page({
               latitude: location.latitude,
               longitude: location.longitude,
               staticMapUrl: location.staticMapUrl,
-              browserMapUrl: location.browserMapUrl,
-              showContact: false
+              browserMapUrl: location.browserMapUrl
             }
           })
           : []
 
         this.setData({
-          leads
+          leads,
+          activeContactLeadKey: ''
         })
       },
       fail: (err) => {
@@ -119,14 +121,14 @@ Page({
     }
   },
   toggleContact: function (event) {
-    const index = event.currentTarget.dataset.index
-    const current = this.data.leads[index]
-    if (!current) {
+    const leadKey = event.currentTarget.dataset.leadKey || ''
+    if (!leadKey) {
       return
     }
 
+    const isCurrentlyOpen = this.data.activeContactLeadKey === leadKey
     this.setData({
-      [`leads[${index}].showContact`]: !current.showContact
+      activeContactLeadKey: isCurrentlyOpen ? '' : leadKey
     })
   },
   callPhone: function (event) {
