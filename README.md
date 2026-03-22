@@ -256,8 +256,8 @@ Use [this](https://uk.luffa.im/docs/quickStartGuide/quickStartGuide.html) docume
 flowchart LR
 	subgraph P[Primary Journey Steps]
 		A1[1. Connect Luffa Wallet]
-		B1[2. Connect Google Account]
-		C1[3. Complete Profile]
+		B1[2. Complete Profile]
+		C1[3. Login with Google]
 		D1[4. Find Opportunities]
 		E1[5. Reach Out]
 		F1[6. Receive Payment]
@@ -281,19 +281,21 @@ flowchart LR
 	end
 
 	subgraph S[Secondary Outcomes]
+		direction LR
 		A2[Wallet Session Active]
-		B2[Google Account Linked]
-		C2[Profile Ready]
+		B2[Profile Ready]
+		C2[Google Account Linked]
 		D2[Matched Opportunities Shown]
 		E2[Outreach Sent]
 		F2[Payment Received]
+		A2 ~~~ B2 ~~~ C2 ~~~ D2 ~~~ E2 ~~~ F2
 	end
 
 	A1 -. initializes .-> A2
-	B1 -. confirms .-> B2
+	C1 -. confirms .-> C2
 
-	C1 -. invokes .-> P1
-	P2 -. updates .-> C2
+	B1 -. invokes .-> P1
+	P2 -. updates .-> B2
 
 	D1 -. invokes .-> BF1
 	D1 -. invokes .-> M1
