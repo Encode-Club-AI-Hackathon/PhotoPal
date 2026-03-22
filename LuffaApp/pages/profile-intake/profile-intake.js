@@ -1,6 +1,7 @@
 const app = getApp();
 const { AGENT_API_BASE_URL, getAgentRequestHeaders } = require("../../config/agent_api");
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require("../../config/supabase");
+const { MAPBOX_ACCESS_TOKEN } = require("../../config/maps");
 
 const AGENT_ANALYZE_TIMEOUT_MS = 420000;
 
@@ -98,6 +99,35 @@ function comparableProfile(profile) {
 
 function areProfilesEqual(left, right) {
   return JSON.stringify(comparableProfile(left)) === JSON.stringify(comparableProfile(right));
+}
+
+function geocodeCity(city, country) {
+  return new Promise((resolve) => {
+    if (!city || !MAPBOX_ACCESS_TOKEN) {
+      resolve({ latitude: null, longitude: null });
+      return;
+    }
+
+    const query = country ? `${city}, ${country}` : city;
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?access_token=${MAPBOX_ACCESS_TOKEN}&limit=1`;
+
+    wx.request({
+      url: url,
+      method: "GET",
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.features && res.data.features.length > 0) {
+          const coords = res.data.features[0].geometry.coordinates;
+          resolve({ latitude: coords[1], longitude: coords[0] });
+          return;
+        }
+        resolve({ latitude: null, longitude: null });
+      },
+      fail: () => {
+        resolve({ latitude: null, longitude: null });
+      },
+    });
+  });
 }
 
 Page({
@@ -370,54 +400,58 @@ Page({
       return;
     }
 
-    const row = {
-      photographer_id: photographerId,
-      name: profile.name || null,
-      primary_niche: profile.primary_niche || null,
-      contact_email: profile.contact_email || null,
-      website_url: profile.website_url || null,
-      instagram_handle: profile.instagram_handle || null,
-      secondary_niches: profile.secondary_niches || [],
-      human_presence: profile.human_presence,
-      location_city: profile.location_city || null,
-      location_country: profile.location_country || null,
-      willingness_to_travel: !!profile.willingness_to_travel,
-      studio_access: !!profile.studio_access,
-    };
-
     this.setData({
       saving: true,
       errorMessage: "",
       statusMessage: "Saving your profile updates...",
     });
 
-    wx.request({
-      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=photographer_id`,
-      method: "POST",
-      header: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates,return=representation",
-      },
-      data: row,
-      success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          this.finalizeCompletion();
-          return;
-        }
+    geocodeCity(profile.location_city, profile.location_country).then((coords) => {
+      const row = {
+        photographer_id: photographerId,
+        name: profile.name || null,
+        primary_niche: profile.primary_niche || null,
+        contact_email: profile.contact_email || null,
+        website_url: profile.website_url || null,
+        instagram_handle: profile.instagram_handle || null,
+        secondary_niches: profile.secondary_niches || [],
+        human_presence: profile.human_presence,
+        location_city: profile.location_city || null,
+        location_country: profile.location_country || null,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        willingness_to_travel: !!profile.willingness_to_travel,
+        studio_access: !!profile.studio_access,
+      };
 
-        const detail = (res.data && (res.data.message || res.data.error || res.data.details || res.data.hint)) || "Save failed";
-        this.setData({ errorMessage: `${detail}`.slice(0, 80) });
-        console.error("supabase save failed:", res);
-      },
-      fail: (err) => {
-        this.setData({ errorMessage: "Save request failed." });
-        console.error("supabase save request failed:", err);
-      },
-      complete: () => {
-        this.setData({ saving: false });
-      },
+      wx.request({
+        url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=photographer_id`,
+        method: "POST",
+        header: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
+        data: row,
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            this.finalizeCompletion();
+            return;
+          }
+
+          const detail = (res.data && (res.data.message || res.data.error || res.data.details || res.data.hint)) || "Save failed";
+          this.setData({ errorMessage: `${detail}`.slice(0, 80) });
+          console.error("supabase save failed:", res);
+        },
+        fail: (err) => {
+          this.setData({ errorMessage: "Save request failed." });
+          console.error("supabase save request failed:", err);
+        },
+        complete: () => {
+          this.setData({ saving: false });
+        },
+      });
     });
   },
   finalizeCompletion: function () {

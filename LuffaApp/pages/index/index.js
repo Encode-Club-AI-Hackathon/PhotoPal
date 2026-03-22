@@ -57,6 +57,8 @@ Page({
     authUserCode: "",
     authVerificationUrl: "",
     loadingGmailSubjects: false,
+    showOnboarding: true,
+    onboardingStep: 1,
   },
   onLoad: function () {
     this.updateDisplayName();
@@ -71,7 +73,11 @@ Page({
     this.resumePendingAuthSession();
   },
   syncAuthState: function () {
-    this.setData({ auth: this.isLoggedIn() });
+    const isLoggedIn = this.isLoggedIn();
+    this.setData({
+      auth: isLoggedIn,
+      onboardingStep: isLoggedIn ? (this.data.hasPhotographerProfile ? 4 : 3) : this.data.walletConnected ? 2 : 1,
+    });
   },
   updateDisplayName: function () {
     const userInfo = app.globalData.userInfo || {};
@@ -90,6 +96,7 @@ Page({
         walletUid: wallet.uid || "",
         walletCid: wallet.cid || "",
         bootLoading: true,
+        onboardingStep: this.data.auth ? 3 : 2,
       });
       this.updateDisplayName();
       this.checkPhotographerProfile(wallet.uid || "");
@@ -105,15 +112,19 @@ Page({
       walletUid: "",
       walletCid: "",
       bootLoading: false,
+      onboardingStep: 1,
     });
     this.updateDisplayName();
   },
   checkPhotographerProfile: function (uid, onDone) {
     const finish = (exists) => {
+      const hasCompleted = exists ? 4 : this.data.auth ? 3 : 2;
       this.setData({
         hasPhotographerProfile: !!exists,
         checkingProfile: false,
         bootLoading: false,
+        onboardingStep: hasCompleted,
+        showOnboarding: !exists,
       });
       if (typeof onDone === "function") onDone(!!exists);
     };
@@ -376,6 +387,7 @@ Page({
           wx.setStorageSync("auth", app.globalData.auth);
           this.clearPendingAuthSession();
           this.stopLoginPolling();
+          this.setData({ onboardingStep: this.data.hasPhotographerProfile ? 4 : 3 });
           this.syncAuthState();
           wx.showToast({ title: "Login successful", icon: "success" });
           return;
