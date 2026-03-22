@@ -69,9 +69,12 @@ Page({
   },
   syncAuthState: function () {
     const isLoggedIn = this.isLoggedIn();
+    const hasWallet = !!this.data.walletConnected;
+    const onboardingStep = !hasWallet ? 1 : isLoggedIn ? (this.data.hasPhotographerProfile ? 4 : 3) : 2;
     this.setData({
       auth: isLoggedIn,
-      onboardingStep: isLoggedIn ? (this.data.hasPhotographerProfile ? 4 : 3) : this.data.walletConnected ? 2 : 1,
+      onboardingStep,
+      showOnboarding: hasWallet ? !this.data.hasPhotographerProfile : true,
     });
   },
   updateDisplayName: function () {
@@ -107,6 +110,7 @@ Page({
       walletUid: "",
       walletCid: "",
       bootLoading: false,
+      showOnboarding: true,
       onboardingStep: 1,
     });
     this.updateDisplayName();
