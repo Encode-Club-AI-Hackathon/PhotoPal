@@ -1,11 +1,9 @@
 <view class="container page">
   <view class="top-links-row">
     <button class="top-link-btn" bindtap="goToSettings">
-      <image class="top-link-icon" src="{{ settingsIcon }}" mode="aspectFit"></image>
       <text>Settings</text>
     </button>
     <button class="top-link-btn" bindtap="showAbout">
-      <image class="top-link-icon" src="{{ infoIcon }}" mode="aspectFit"></image>
       <text>About</text>
     </button>
   </view>

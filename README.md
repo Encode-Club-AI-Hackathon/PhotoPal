@@ -24,7 +24,9 @@ Built on Luffa App and secured by Civic, the product combines a client experienc
     - [6) Download Luffa and Use the App](#6-download-luffa-and-use-the-app)
 - [Workflow](#workflow)
 - [API Endpoints](#api-endpoints)
+- [Authentication Endpoints](#authentication-endpoints)
 - [Authentication Notes](#authentication-notes)
+- [Technical Limitations](#technical-limitations)
 - [References](#references)
 
 ## Why PhotoPal
@@ -361,11 +363,92 @@ Request:
 }
 ```
 
+### POST /agents/business-matcher
+
+Request:
+
+```json
+{
+	"photographer_id": "wallet_uid",
+	"city": "Bristol",
+	"radius_km": 20,
+	"limit": 5,
+	"use_cache": true,
+	"excluded_business_ids": [101, 102]
+}
+```
+
+### POST /agents/send-gmail
+
+Request:
+
+```json
+{
+	"to_email": "owner@business.com",
+	"subject": "Quick idea for your brand visuals",
+	"body": "Hi, I had a look at your online presence and have a few visual ideas...",
+	"outreach_email_id": 123
+}
+```
+
+### POST /agents/save-gmail-draft
+
+Request:
+
+```json
+{
+	"to_email": "owner@business.com",
+	"subject": "Quick idea for your brand visuals",
+	"body": "Hi, I had a look at your online presence and have a few visual ideas...",
+	"outreach_email_id": 123
+}
+```
+
+## Custom Auth Solution Endpoints
+
+These endpoints are exposed by the backend auth server in addition to the `/agents/*` routes.
+
+- `GET /`: Returns tokens (and finalizes device session when applicable).
+
+### Device Login Flow
+
+- `POST /auth/device/start`: Create a device login session and return verification URL + user code.
+- `GET /auth/device/verify?session_id=...`: Render verification page and start Google login handoff.
+- `GET /auth/device/status?session_id=...`: Poll session status and retrieve approved tokens/profile.
+
+### Google OAuth Flow
+
+- `GET /auth/google/login?session_id=...`: Start Google OAuth for an active device session.
+- `GET /auth/google/callback`: Google OAuth callback endpoint.
+
+### Token Exchange
+
+- `POST /auth/civic/exchange`: Exchange a subject token for a Civic access token.
+
+Request:
+
+```json
+{
+	"subject_token": "<jwt-or-provider-token>"
+}
+```
+
 ## Authentication Notes
 
-- Backend supports Civic login, callback, logout, and device flow routes.
+- Logout is finalised client-side by removing the stored auth token and clearing the device session id.
 - Agent routes accept Bearer tokens and can exchange non-Civic subject tokens for Civic access tokens.
 - In local hackathon mode, a static CIVIC_TOKEN fallback is supported.
+
+## Technical Limitations
+
+- Luffa mini app navigation constraints: you cannot reliably deep-link/link users to websites or external applications outside the mini app container.
+- No DOM access or DOM manipulation: standard browser DOM patterns are unavailable in the mini app runtime.
+- Limited ecosystem compatibility: complex external packages are harder to use due to mini app runtime and bundling constraints.
+- Civic auth scope limitation for this use case: we could not pass all required scopes needed for both sending and receiving emails in the expected flow.
+- Civic tool API key UX gap: when a Civic tool has no API key configured, the flow asks for manual plain-text instructions and a link-based handoff; this would be better handled via an interceptable tool call.
+- Civic Python library maturity and documentation gap: docs are limited, and one relevant library release landed one day before the hackathon.
+- Civic guardrail management bug: adding a guardrail to a skill via the Civic web UI failed, and we had to use the AI chatbot as a workaround.
+
 
 ## References
 

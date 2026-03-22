@@ -60,11 +60,6 @@ button[disabled] {
   padding: 0 16rpx;
 }
 
-.top-link-icon {
-  width: 28rpx;
-  height: 28rpx;
-}
-
 .hero-card {
   width: 100%;
   padding: 32rpx;
