@@ -48,7 +48,7 @@
       <view class="step-badge" wx:if="{{ onboardingStep > 1 }}">Done</view>
     </view>
 
-    <!-- Step 2: Login with Google -->
+    <!-- Step 2: Complete Profile -->
     <view class="onboarding-step {{ onboardingStep === 2 ? 'step-active' : onboardingStep > 2 ? 'step-completed' : 'step-pending' }}">
       <view class="step-indicator">
         <view class="step-number">
@@ -57,11 +57,27 @@
         </view>
       </view>
       <view class="step-content">
+        <text class="step-title">Complete Your Profile</text>
+        <text class="step-description">Let our AI analyze and discover your best opportunities.</text>
+      </view>
+      <button wx:if="{{ onboardingStep === 2 }}" class="step-btn" bindtap="goToProfileIntake" disabled="{{ !walletConnected }}">Get Started</button>
+      <view class="step-badge" wx:if="{{ onboardingStep > 2 }}">Done</view>
+    </view>
+
+    <!-- Step 3: Login with Google -->
+    <view class="onboarding-step {{ onboardingStep === 3 ? 'step-active' : auth ? 'step-completed' : 'step-pending' }}">
+      <view class="step-indicator">
+        <view class="step-number">
+          <text wx:if="{{ auth }}">✓</text>
+          <text wx:else>3</text>
+        </view>
+      </view>
+      <view class="step-content">
         <text class="step-title">Login with Google</text>
         <text class="step-description">Connect your Google account for fast outreach.</text>
       </view>
       <button
-        wx:if="{{ onboardingStep === 2 }}"
+        wx:if="{{ onboardingStep === 3 }}"
         class="step-btn"
         bindtap="handleLogin"
         loading="{{ authPolling }}"
@@ -70,19 +86,7 @@
         <image class="step-btn-icon" src="{{ googleIcon }}" mode="aspectFit"></image>
         {{ authPolling ? "Waiting..." : "Connect Google" }}
       </button>
-      <view class="step-badge" wx:if="{{ onboardingStep > 2 }}">Done</view>
-    </view>
-
-    <!-- Step 3: Complete Profile -->
-    <view class="onboarding-step {{ onboardingStep === 3 ? 'step-active' : 'step-pending' }}">
-      <view class="step-indicator">
-        <view class="step-number">3</view>
-      </view>
-      <view class="step-content">
-        <text class="step-title">Complete Your Profile</text>
-        <text class="step-description">Let our AI analyze and discover your best opportunities.</text>
-      </view>
-      <button wx:if="{{ onboardingStep === 3 }}" class="step-btn" bindtap="goToProfileIntake" disabled="{{ !walletConnected }}">Get Started</button>
+      <view class="step-badge" wx:if="{{ auth }}">Done</view>
     </view>
   </view>
 
