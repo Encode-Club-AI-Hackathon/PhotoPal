@@ -248,6 +248,8 @@ Request:
 - Move in-memory device sessions to Redis for production reliability.
 - Add tests for route contracts and agent result validation.
 
-## License
+## References
 
-Internal or private project unless otherwise specified.
+- [LuffaMiniApp_Template GitHub Repositroy](https://github.com/BabyBoss45/LuffaMiniApp_Template/tree/main)
+- [Luffa SuperBox Documentation](https://uk.luffa.im/docs/quickStartGuide/quickStartGuide.html)
+- [Civic Documentation](https://docs.civic.com/?_gl=1*zq7beh*_up*MQ..*_ga*MTk2ODEzMzAyMS4xNzc0MTU3Njgy*_ga_EN41CJBWQV*czE3NzQxNTc2ODIkbzEkZzAkdDE3NzQxNTc2ODIkajYwJGwwJGgzOTE3MzU1NzY.)
