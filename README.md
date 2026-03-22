@@ -25,9 +25,6 @@ Built on Luffa App and secured by Civic, the product combines a client experienc
 - [Workflow](#workflow)
 - [API Endpoints](#api-endpoints)
 - [Authentication Notes](#authentication-notes)
-- [Data Flow Summary](#data-flow-summary)
-- [Development Notes](#development-notes)
-- [Roadmap Ideas](#roadmap-ideas)
 - [References](#references)
 
 ## Why PhotoPal
@@ -370,12 +367,6 @@ Request:
 - Backend supports Civic login, callback, logout, and device flow routes.
 - Agent routes accept Bearer tokens and can exchange non-Civic subject tokens for Civic access tokens.
 - In local hackathon mode, a static CIVIC_TOKEN fallback is supported.
-
-## Development Notes
-
-- API route responses use JSONResponse with jsonable_encoder for reliable serialization.
-- The portfolio agent excludes store-save style tools that can fail in non-interactive backend sessions.
-- Main agent runner supports CLI execution via backend/agents/main.py for local testing.
 
 ## References
 
