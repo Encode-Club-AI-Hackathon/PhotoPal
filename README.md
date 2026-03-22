@@ -45,13 +45,12 @@ PhotoPal automates that workflow in four steps:
 - Agentic business discovery for local opportunities.
 - Profile-to-business fit matching.
 - Business-level research and outreach draft generation.
-- Civic-backed auth and token exchange support.
 - Supabase persistence for businesses, profiles, and drafts.
 - Luffa mini app UI for onboarding and opportunity review.
 
 ## System Architecture
 
-PhotoPal is split into two main applications:
+PhotoPal is split into two main applications plus a safety and control layer:
 
 - LuffaApp mini program frontend
 	- Photographer onboarding and profile intake.
@@ -59,9 +58,11 @@ PhotoPal is split into two main applications:
 	- Calls backend agent endpoints.
 - Python FastAPI backend
 	- Agent endpoints under /agents/*.
-	- Civic auth routes and device flow helpers.
+	- Device flow helpers.
 	- LangGraph-based agents with MCP tools.
 	- Supabase persistence for agent outputs.
+- Civic AI layer
+	- Provides a broad set of tools and guardrails to keep workflows safe and controlled.
 
 ## AI Agents
 
