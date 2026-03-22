@@ -371,16 +371,6 @@ Request:
 - Agent routes accept Bearer tokens and can exchange non-Civic subject tokens for Civic access tokens.
 - In local hackathon mode, a static CIVIC_TOKEN fallback is supported.
 
-## Data Flow Summary
-
-1. User completes profile intake in LuffaApp.
-2. Frontend calls /agents/portfolio-analyser.
-3. Profile data is saved in photographer_profiles.
-4. Business Finder populates businesses.
-5. Match Maker ranks the best profile-to-business opportunities.
-6. Outreach Generator combines business + profile context to produce business_outreach_emails.
-7. Suggested opportunities page surfaces matched leads for action.
-
 ## Development Notes
 
 - API route responses use JSONResponse with jsonable_encoder for reliable serialization.
