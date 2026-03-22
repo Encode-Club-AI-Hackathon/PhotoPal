@@ -117,6 +117,45 @@
   text-overflow: ellipsis;
 }
 
+.match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 16rpx;
+  border-radius: 14rpx;
+  background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%);
+  border: 1rpx solid #dbeafe;
+}
+
+.match-distance,
+.match-score {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.match-label {
+  font-size: 22rpx;
+  color: #475569;
+  font-weight: 600;
+}
+
+.match-value {
+  font-size: 24rpx;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.match-reason {
+  font-size: 22rpx;
+  color: #0c4a6e;
+  font-style: italic;
+  padding-top: 8rpx;
+  border-top: 1rpx solid #bae6fd;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;

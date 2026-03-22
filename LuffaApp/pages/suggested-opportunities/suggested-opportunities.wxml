@@ -26,6 +26,18 @@
         <text class="type-pill">{{item.type}}</text>
       </view>
 
+      <view class="match-info">
+        <view class="match-distance">
+          <text class="match-label">Distance:</text>
+          <text class="match-value">{{item.distanceKm}} km</text>
+        </view>
+        <view class="match-score">
+          <text class="match-label">Match Score:</text>
+          <text class="match-value">{{item.matchScore.toFixed(1)}}/100</text>
+        </view>
+        <text class="match-reason">{{item.matchReason}}</text>
+      </view>
+
       <view class="card-body">
         <view class="map-block" wx:if="{{item.hasCoordinates}}">
           <view class="map-head">

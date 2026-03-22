@@ -7,15 +7,101 @@ Page({
     leads: [],
     activeContactLeadKey: '',
     loading: false,
-    errorMessage: ''
+    errorMessage: '',
+    radiusKm: 50.0,
+    limitCount: 20
   },
   onLoad: function () {
     this.fetchSuggestedLeads()
   },
+  requestSpatialRpc: function (latitude, longitude, onSuccess, onFailure) {
+    const attempts = [
+      { user_lat: latitude, user_lon: longitude, radius_meters: 50000, result_limit: this.data.limitCount },
+      { latitude, longitude, radius_meters: 50000, result_limit: this.data.limitCount },
+      { lat: latitude, lon: longitude, radius_meters: 50000, limit: this.data.limitCount }
+    ]
+
+    const tryRequest = (index) => {
+      if (index >= attempts.length) {
+        onFailure('RPC call failed. Check function arguments and RLS policies.')
+        return
+      }
+
+      wx.request({
+        url: `${SUPABASE_URL}/rest/v1/rpc/suggest_businesses_for_photographer`,
+        method: 'POST',
+        header: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        data: attempts[index],
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300 && Array.isArray(res.data)) {
+            onSuccess(res.data)
+            return
+          }
+
+          const detail = res && res.data && res.data.message ? `${res.data.message}` : ''
+          if (res.statusCode === 404 || res.statusCode === 400) {
+            tryRequest(index + 1)
+            return
+          }
+          onFailure(`HTTP ${res.statusCode}. ${detail}`.trim())
+        },
+        fail: (err) => {
+          onFailure((err && err.errMsg) || 'Network request failed')
+        }
+      })
+    }
+
+    tryRequest(0)
+  },
+  resolvePhotographerCoordinates: function (photographerId, onSuccess, onFailure) {
+    wx.request({
+      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?photographer_id=eq.${encodeURIComponent(photographerId)}&select=*&limit=1`,
+      method: 'GET',
+      header: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      success: (res) => {
+        if (res.statusCode < 200 || res.statusCode >= 300 || !Array.isArray(res.data) || !res.data.length) {
+          onFailure('Could not load photographer location.')
+          return
+        }
+
+        const row = res.data[0] || {}
+        const latitude = Number(row.latitude !== undefined && row.latitude !== null ? row.latitude : row.lat)
+        const longitude = Number(row.longitude !== undefined && row.longitude !== null ? row.longitude : row.lon)
+
+        if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+          onFailure('Photographer location is missing. Please update your profile location.')
+          return
+        }
+
+        onSuccess(latitude, longitude)
+      },
+      fail: (err) => {
+        onFailure((err && err.errMsg) || 'Failed to fetch photographer location')
+      }
+    })
+  },
   fetchSuggestedLeads: function () {
+    const app = getApp()
+    const wallet = app && app.globalData && app.globalData.wallet
+    const walletUid = wallet && wallet.uid ? `${wallet.uid}`.trim() : ''
+
+    if (!walletUid) {
+      this.setData({
+        errorMessage: 'Unable to identify current user. Please log in again.'
+      })
+      return
+    }
+
     if (!SUPABASE_URL.includes('supabase.co') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
       this.setData({
-        errorMessage: 'Set SUPABASE_URL and SUPABASE_ANON_KEY in config/supabase.js first.'
+        errorMessage: 'Supabase configuration is missing in config/supabase.js.'
       })
       return
     }
@@ -25,52 +111,65 @@ Page({
       errorMessage: ''
     })
 
-    wx.request({
-      url: `${SUPABASE_URL}/rest/v1/businesses?select=id,website,created_at,lon,lat,business_name,type,contact_name,email_address,phone_number,notes_needs&order=created_at.desc`,
-      method: 'GET',
-      header: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      success: (res) => {
-        const leads = Array.isArray(res.data)
-          ? res.data.map((item, index) => {
-            const location = this.parseCoordinates(item.lat, item.lon, index)
-            return {
-              id: item.id || item.website || `lead-${index}`,
-              leadKey: `${item.id || item.website || 'lead'}-${index}`,
-              website: item.website || '',
-              businessName: item.business_name || 'Untitled Business',
-              type: item.type || 'General',
-              contactName: item.contact_name || '',
-              emailAddress: item.email_address || '',
-              phoneNumber: item.phone_number || '',
-              notesNeeds: item.notes_needs || '',
-              hasCoordinates: location.hasCoordinates,
-              latitude: location.latitude,
-              longitude: location.longitude,
-              staticMapUrl: location.staticMapUrl,
-              browserMapUrl: location.browserMapUrl
-            }
-          })
-          : []
+    this.resolvePhotographerCoordinates(
+      walletUid,
+      (latitude, longitude) => {
+        this.requestSpatialRpc(
+          latitude,
+          longitude,
+          (rows) => {
+            const leads = rows.map((item, index) => {
+              const location = this.parseCoordinates(item.lat, item.lon, index)
+              const distanceMeters = Number(item.distance)
+              const hasDistance = !Number.isNaN(distanceMeters)
+              const distanceKmValue = hasDistance ? distanceMeters / 1000 : null
+              return {
+                id: item.id || item.website || `lead-${index}`,
+                leadKey: `${item.id || item.website || 'lead'}-${index}`,
+                website: item.website || '',
+                businessName: item.business_name || 'Untitled Business',
+                type: item.type || 'General',
+                contactName: item.contact_name || '',
+                emailAddress: item.email_address || '',
+                phoneNumber: item.phone_number || '',
+                notesNeeds: item.notes_needs || '',
+                distanceKm: distanceKmValue !== null ? distanceKmValue.toFixed(2) : 'Unknown',
+                matchScore: hasDistance ? Math.max(0, 100 - distanceKmValue) : 0,
+                matchReason: 'Nearby business (location filtered)',
+                hasCoordinates: location.hasCoordinates,
+                latitude: location.latitude,
+                longitude: location.longitude,
+                staticMapUrl: location.staticMapUrl,
+                browserMapUrl: location.browserMapUrl
+              }
+            })
 
-        this.setData({
-          leads,
-          activeContactLeadKey: ''
-        })
+            this.setData({
+              leads,
+              activeContactLeadKey: '',
+              loading: false,
+              errorMessage: ''
+            })
+          },
+          (message) => {
+            this.setData({
+              leads: [],
+              activeContactLeadKey: '',
+              loading: false,
+              errorMessage: `Unable to load opportunities. ${message}`
+            })
+          }
+        )
       },
-      fail: (err) => {
+      (message) => {
         this.setData({
-          errorMessage: `Unable to load opportunities. ${err && err.errMsg ? err.errMsg : ''}`
-        })
-      },
-      complete: () => {
-        this.setData({
-          loading: false
+          leads: [],
+          activeContactLeadKey: '',
+          loading: false,
+          errorMessage: `Unable to load opportunities. ${message}`
         })
       }
-    })
+    )
   },
   parseCoordinates: function (lat, lon) {
     let safeLat = Number(lat)
