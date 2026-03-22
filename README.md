@@ -24,6 +24,7 @@ Built on Luffa App and secured by Civic, the product combines a client experienc
     - [6) Download Luffa and Use the App](#6-download-luffa-and-use-the-app)
 - [Workflow](#workflow)
 - [API Endpoints](#api-endpoints)
+- [Authentication Endpoints](#authentication-endpoints)
 - [Authentication Notes](#authentication-notes)
 - [References](#references)
 
@@ -399,6 +400,41 @@ Request:
 	"subject": "Quick idea for your brand visuals",
 	"body": "Hi, I had a look at your online presence and have a few visual ideas...",
 	"outreach_email_id": 123
+}
+```
+
+## Authentication Endpoints
+
+These endpoints are exposed by the backend auth server in addition to the `/agents/*` routes.
+
+### Civic Auth Flow
+
+- `GET /auth/login`: Start Civic OAuth login.
+- `GET /auth/callback`: Civic OAuth callback endpoint.
+- `GET /auth/logout`: Start Civic logout flow.
+- `GET /auth/logoutcallback`: Civic logout callback endpoint.
+- `GET /`: Returns tokens (and finalizes device session when applicable).
+
+### Device Login Flow
+
+- `POST /auth/device/start`: Create a device login session and return verification URL + user code.
+- `GET /auth/device/verify?session_id=...`: Render verification page and start Google login handoff.
+- `GET /auth/device/status?session_id=...`: Poll session status and retrieve approved tokens/profile.
+
+### Google OAuth Flow
+
+- `GET /auth/google/login?session_id=...`: Start Google OAuth for an active device session.
+- `GET /auth/google/callback`: Google OAuth callback endpoint.
+
+### Token Exchange
+
+- `POST /auth/civic/exchange`: Exchange a subject token for a Civic access token.
+
+Request:
+
+```json
+{
+	"subject_token": "<jwt-or-provider-token>"
 }
 ```
 
