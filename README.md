@@ -281,6 +281,7 @@ flowchart LR
 	end
 
 	subgraph S[Secondary Outcomes]
+		direction LR
 		A2[Wallet Session Active]
 		B2[Profile Ready]
 		C2[Google Account Linked]
