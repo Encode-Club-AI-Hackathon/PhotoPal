@@ -233,20 +233,6 @@ async def run_business_outreach(business_id: int, profile_id: int, civic_access_
 	)
 
 
-async def run_gmail_recent_subjects(access_token: str | None = None) -> dict[str, Any]:
-	try:
-		from .gmail_recent_subjects import fetch_recent_email_subjects
-	except ImportError:
-		from gmail_recent_subjects import fetch_recent_email_subjects  # type: ignore
-
-	if not access_token:
-		access_token = os.getenv("GOOGLE_ACCESS_TOKEN")
-	if not access_token:
-		raise ValueError("Missing Google access token (pass access_token or set GOOGLE_ACCESS_TOKEN)")
-
-	return await fetch_recent_email_subjects(access_token=access_token)
-
-
 async def main(
 	agent: str,
 	profile_id: int | None,
@@ -275,9 +261,6 @@ async def main(
 		result = await run_business_outreach(business_id, profile_id)
 		if agent != "all":
 			return result
-	if agent in {"gmail-recent-subjects"}:
-		result = await run_gmail_recent_subjects()
-		return result
 	return None
 
 
@@ -285,7 +268,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="Run PhotoPal agents and persist output to Supabase.")
 	parser.add_argument(
 		"--agent",
-		choices=["lead-finder", "portfolio-analyser", "business-outreach", "gmail-recent-subjects", "all"],
+		choices=["lead-finder", "portfolio-analyser", "business-outreach", "all"],
 		default="all",
 		help="Choose which agent to run.",
 	)

@@ -13,6 +13,7 @@ from langchain_core.tools import tool
 
 # Import Pydantic for structured output
 from pydantic import BaseModel, Field
+from .civic_token_exchange import resolve_civic_access_token
 
 import logging
 
@@ -72,7 +73,7 @@ def submit_final_leads(leads: List[BusinessLead]):
 
 
 async def create_agent(civic_access_token: str | None = None):
-    active_token = civic_access_token or civic_token
+    active_token = await resolve_civic_access_token(civic_access_token)
 
     if not civic_url or not active_token:
         raise ValueError("Missing CIVIC_URL or CIVIC_TOKEN in environment.")

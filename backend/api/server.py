@@ -11,7 +11,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from api.routes.business_outreach import router as business_outreach_router
-from api.routes.gmail_recent_subjects import router as gmail_recent_subjects_router
 from api.routes.lead_finder import router as lead_finder_router
 from api.routes.portfolio_analyser import router as portfolio_analyser_router
 from civic_auth import CivicAuth

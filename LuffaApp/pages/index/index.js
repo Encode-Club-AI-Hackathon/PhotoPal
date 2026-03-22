@@ -1,10 +1,9 @@
 //index.js
-const app = getApp()
-const luffa = require('../../utils/luffa')
-const { defaultIcon } = require('../../utils/icon')
-const { defaultSettingsIcon } = require('../../utils/settings_icon')
-const { defaultInfoIcon } = require('../../utils/info')
-const { SUPABASE_URL, SUPABASE_ANON_KEY } = require('../../config/supabase')
+const app = getApp();
+const luffa = require("../../utils/luffa");
+const { defaultIcon } = require("../../utils/icon");
+const { defaultSettingsIcon } = require("../../utils/settings_icon");
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = require("../../config/supabase");
 
 function buildWalletFromPayload(payload) {
   const data = payload || {};
@@ -38,8 +37,10 @@ Page({
     subtitle: "Plan shoots, track leads, and focus on the work you love.",
     displayName: "Photographer",
     settingsIcon: defaultSettingsIcon,
-    infoIcon: defaultInfoIcon,
-    googleIcon: '/utils/google_icon.png',
+    title: "PhotoPal",
+    subtitle: "Plan shoots, track leads, and focus on the work you love.",
+    displayName: "Photographer",
+    settingsIcon: defaultSettingsIcon,
     tickIcon: defaultIcon,
     connectingWallet: false,
     checkingProfile: false,
@@ -54,28 +55,18 @@ Page({
     authUserCode: "",
     authVerificationUrl: "",
     loadingGmailSubjects: false,
-    showAuthCenter: false,
   },
   onLoad: function () {
     this.updateDisplayName();
     this.updateDisplayName();
     this.syncWalletState();
     this.resumePendingAuthSession();
-    this.refreshAuthState();
   },
   onShow: function () {
     this.updateDisplayName();
     this.updateDisplayName();
     this.syncWalletState();
     this.resumePendingAuthSession();
-    this.refreshAuthState();
-  },
-  refreshAuthState: function () {
-    const loggedIn = this.isLoggedIn();
-    this.setData({
-      loggedIn,
-      showAuthCenter: !this.data.walletConnected && !loggedIn,
-    });
   },
   updateDisplayName: function () {
     const userInfo = app.globalData.userInfo || {};
@@ -96,7 +87,6 @@ Page({
       });
       this.updateDisplayName();
       this.checkPhotographerProfile(wallet.uid || "");
-      this.setData({ showAuthCenter: false });
       return;
     }
 
@@ -110,7 +100,6 @@ Page({
       walletCid: "",
     });
     this.updateDisplayName();
-    this.setData({ showAuthCenter: !this.data.loggedIn });
   },
   checkPhotographerProfile: function (uid, onDone) {
     const finish = (exists) => {
@@ -170,7 +159,6 @@ Page({
         wx.setStorageSync("wallet", wallet);
         this.setData({ connectingWallet: false });
         this.syncWalletState();
-        this.refreshAuthState();
         wx.showToast({ title: "Wallet connected", icon: "success" });
 
         this.checkPhotographerProfile(wallet.uid || "", (exists) => {
@@ -193,22 +181,9 @@ Page({
       url: "../settings/settings",
     });
   },
-  showAbout: function () {
-    wx.showModal({
-      title: "About",
-      content: "PhotoPal helps photographers connect wallet, complete profile, and discover business opportunities.",
-      showCancel: false,
-      confirmText: "OK",
-    });
-  },
   goToSuggestedOpportunities: function () {
     if (!this.data.walletConnected) {
       wx.showToast({ title: "Connect wallet first", icon: "none" });
-      return;
-    }
-
-    if (!this.data.hasPhotographerProfile) {
-      wx.showToast({ title: "Complete profile first", icon: "none" });
       return;
     }
 
@@ -386,7 +361,6 @@ Page({
           wx.setStorageSync("auth", app.globalData.auth);
           this.clearPendingAuthSession();
           this.stopLoginPolling();
-          this.refreshAuthState();
           wx.showToast({ title: "Login successful", icon: "success" });
           return;
         }
@@ -394,7 +368,6 @@ Page({
         if (status === "denied" || status === "expired") {
           this.clearPendingAuthSession();
           this.stopLoginPolling();
-          this.refreshAuthState();
           wx.showToast({ title: `Login ${status}`, icon: "none" });
           return;
         }
@@ -443,7 +416,6 @@ Page({
 
     if (this.isLoggedIn()) {
       this.clearPendingAuthSession();
-      this.refreshAuthState();
       return;
     }
 

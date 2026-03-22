@@ -9,6 +9,7 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
+from .civic_token_exchange import resolve_civic_access_token
 
 
 civic_token = os.getenv("CIVIC_TOKEN")
@@ -61,7 +62,7 @@ def submit_final_profiles(profiles: List[PhotographerProfile]):
 
 
 async def create_agent(civic_access_token: str | None = None):
-	active_token = civic_access_token or civic_token
+	active_token = await resolve_civic_access_token(civic_access_token)
 
 	if not civic_url or not active_token:
 		raise ValueError("Missing CIVIC_URL or CIVIC_TOKEN in environment.")

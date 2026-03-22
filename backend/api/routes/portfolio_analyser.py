@@ -27,6 +27,7 @@ async def portfolio_analyser_route(payload: PortfolioAnalyserRequest, civic_acce
         print(f"  website_url: {payload.website_url}")
         print(f"  instagram_handle: {payload.instagram_handle}")
         print(f"  photographer_id: {payload.photographer_id}")
+        print(f"  civic_access_token_present: {'yes' if civic_access_token else 'no'}")
         print(f"{'='*60}\n")
         
         result = await run_portfolio_analyser(
