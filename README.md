@@ -1,8 +1,29 @@
 # PhotoPal
 
-PhotoPal is an agentic AI platform that helps photographers analyze their portfolio, discover qualified business leads, match opportunities to their style, and generate tailored outreach drafts.
+This project was built as part of the [Encode AI London Hackathon 2026](https://www.encodeclub.com/programmes/ai-london-2026).
 
-Built on Luffa App and secured by Civic, the product combines a mobile-first client experience with AI agents that run structured research workflows and persist results to Supabase.
+
+PhotoPal is an agentic AI platform that helps photographers analyse their portfolio, discover qualified business leads, match opportunities to their style, and generate tailored outreach drafts.
+
+Built on Luffa App and secured by Civic, the product combines a client experience with AI agents that run structured research workflows and persist results to Supabase.
+
+## Table of Contents
+
+- [Why PhotoPal](#why-photopal)
+- [Core Features](#core-features)
+- [System Architecture](#system-architecture)
+- [AI Agents](#ai-agents)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Setup](#setup)
+- [1) Backend Setup (FastAPI + Agents)](#1-backend-setup-fastapi--agents)
+- [2) Luffa App Setup](#2-luffa-app-setup)
+- [API Endpoints](#api-endpoints)
+- [Authentication Notes](#authentication-notes)
+- [Data Flow Summary](#data-flow-summary)
+- [Development Notes](#development-notes)
+- [Roadmap Ideas](#roadmap-ideas)
+- [References](#references)
 
 ## Why PhotoPal
 
