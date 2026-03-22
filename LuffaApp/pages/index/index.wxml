@@ -46,12 +46,9 @@
     <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects }}">
       {{ loadingGmailSubjects ? "Fetching Gmail Subjects..." : "Get Last 5 Gmail Subjects" }}
     </button>
-    <button class="secondary-btn" bindtap="summarizeEmails" loading="{{ loadingEmailSummary }}" disabled="{{ loadingEmailSummary }}">
-      {{ loadingEmailSummary ? "Summarizing Emails..." : "Summarize Last 5 Emails" }}
-    </button>
   </view>
 
-  <view class="google-connect-card" wx:if="{{ !loggedIn }}">
+  <view class="google-connect-card" wx:if="{{ !auth }}">
     <text class="google-connect-title">Want to seamlessly contact employers?</text>
     <text class="google-connect-subtitle">Connect your Google account to streamline outreach and follow-ups.</text>
     <button class="google-connect-btn" bindtap="handleLogin">
@@ -59,5 +56,5 @@
       <text>Connect</text>
     </button>
   </view>
-  <button class="secondary-btn" wx:if="{{ loggedIn }}" bindtap="handleLogout">Logout</button>
+  <button class="secondary-btn" wx:if="{{ auth }}" bindtap="handleLogout">Logout</button>
 </view>

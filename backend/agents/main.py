@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
@@ -120,7 +121,7 @@ async def run_and_store(
 	}
 
 
-async def run_lead_finder(profile_id: int, civic_access_token: str | None = None) -> dict[str, Any]:
+async def run_lead_finder(area: str, civic_access_token: str | None = None) -> dict[str, Any]:
 	try:
 		from .lead_finder import (
 			create_agent,
@@ -130,16 +131,39 @@ async def run_lead_finder(profile_id: int, civic_access_token: str | None = None
 			TARGET_TABLE,
 		)
 	except ImportError:
-		from lead_finder import (  # type: ignore
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-			TARGET_TABLE,
-		)
+		try:
+			from agents.lead_finder import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
+		except ImportError:
+			from lead_finder import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
 
-	profile = get_single_row("photographer_profiles", "photographer_id", profile_id)
-	prompt = build_prompt(profile)
+	normalized_area = (area or "").strip()
+	if not normalized_area:
+		raise ValueError("lead-finder requires a non-empty area")
+
+	thread_slug = re.sub(r"[^a-z0-9]+", "-", normalized_area.lower()).strip("-") or "local"
+	prompt = build_prompt(normalized_area)
+
+	def lead_row_transform(row: dict[str, Any]) -> dict[str, Any]:
+		if "lon" in row and "longitude" not in row:
+			row["longitude"] = row["lon"]
+		if "lat" in row and "lattitude" not in row:
+			row["lattitude"] = row["lat"]
+
+		row.pop("lon", None)
+		row.pop("lat", None)
+		return row
 
 	return await run_and_store(
 		create_agent=create_agent,
@@ -147,8 +171,9 @@ async def run_lead_finder(profile_id: int, civic_access_token: str | None = None
 		submit_tool_name=SUBMIT_TOOL_NAME,
 		results_key=RESULTS_KEY,
 		target_table=TARGET_TABLE,
-		thread_id=f"lead-finder-session-{profile_id}",
+		thread_id=f"lead-finder-session-{thread_slug}",
 		civic_access_token=civic_access_token,
+		row_transform=lead_row_transform,
 	)
 
 
@@ -167,13 +192,22 @@ async def run_portfolio_analyser(
 			TARGET_TABLE,
 		)
 	except ImportError:
-		from portfolio_analyser import (  # type: ignore
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-			TARGET_TABLE,
-		)
+		try:
+			from agents.portfolio_analyser import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
+		except ImportError:
+			from portfolio_analyser import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
 
 	prompt = build_prompt(website_url, instagram_handle)
 
@@ -204,13 +238,22 @@ async def run_business_outreach(business_id: int, profile_id: int, civic_access_
 			TARGET_TABLE,
 		)
 	except ImportError:
-		from business_outreach_researcher import (  # type: ignore
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-			TARGET_TABLE,
-		)
+		try:
+			from agents.business_outreach_researcher import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
+		except ImportError:
+			from business_outreach_researcher import (  # type: ignore
+				create_agent,
+				build_prompt,
+				RESULTS_KEY,
+				SUBMIT_TOOL_NAME,
+				TARGET_TABLE,
+			)
 
 	business = get_single_row("businesses", "id", business_id)
 	profile = get_single_row("photographer_profiles", "photographer_id", profile_id)
@@ -235,6 +278,7 @@ async def run_business_outreach(business_id: int, profile_id: int, civic_access_
 
 async def main(
 	agent: str,
+	area: str | None,
 	profile_id: int | None,
 	business_id: int | None,
 	website_url: str | None,
@@ -242,9 +286,9 @@ async def main(
 	photographer_id: str | None,
 ) -> dict[str, Any] | None:
 	if agent in {"lead-finder", "all"}:
-		if profile_id is None:
-			raise ValueError("lead-finder requires --profile-id")
-		result = await run_lead_finder(profile_id)
+		if not area:
+			raise ValueError("lead-finder requires --area")
+		result = await run_lead_finder(area)
 		if agent != "all":
 			return result
 	if agent in {"portfolio-analyser", "all"}:
@@ -272,6 +316,7 @@ if __name__ == "__main__":
 		default="all",
 		help="Choose which agent to run.",
 	)
+	parser.add_argument("--area", type=str, help="Area to find business leads in (e.g. 'Bristol, UK')")
 	parser.add_argument("--profile-id", type=int, help="photographer_profiles.photographer_id")
 	parser.add_argument("--business-id", type=int, help="businesses.id")
 	parser.add_argument("--website-url", type=str, help="Portfolio website URL")
@@ -281,6 +326,7 @@ if __name__ == "__main__":
 	asyncio.run(
 		main(
 			agent=args.agent,
+			area=args.area,
 			profile_id=args.profile_id,
 			business_id=args.business_id,
 			website_url=args.website_url,

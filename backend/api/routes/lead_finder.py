@@ -11,13 +11,13 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 
 class LeadFinderRequest(BaseModel):
-    photographer_id: int = Field(..., description="photographer_profiles.photographer_id")
+    area: str = Field(..., description="Area to search for businesses, e.g. 'Bristol, UK'")
 
 
 @router.post("/lead-finder")
 async def lead_finder_route(payload: LeadFinderRequest, civic_access_token: str | None = Depends(extract_bearer_token)):
     try:
-        result = await run_lead_finder(payload.photographer_id, civic_access_token=civic_access_token)
+        result = await run_lead_finder(payload.area, civic_access_token=civic_access_token)
         return JSONResponse(content=jsonable_encoder(result))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

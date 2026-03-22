@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Optional
+from typing import List, Optional
 
 # Correct imports
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -31,8 +31,8 @@ class BusinessLead(BaseModel):
     phone_number: Optional[str] = Field(default=None, description="Phone number if available")
     website: str = Field(default=None, description="Website URL if available")
     notes_needs: Optional[str] = Field(default=None, description="Any specific notes or photography needs")
-    lon: float = Field(default=None, description="Longitude of the business location")
-    lat: float = Field(default=None, description="Latitude of the business location")
+    longitude: float = Field(default=None, description="Longitude of the business location")
+    latitude: float = Field(default=None, description="Latitude of the business location")
 
 class LeadList(BaseModel):
     leads: List[BusinessLead] = Field(description="A list of business leads found during the search")
@@ -43,23 +43,13 @@ RESULTS_KEY = "leads"
 TARGET_TABLE = "businesses"
 
 
-def build_prompt(profile: dict[str, Any]) -> str:
-    name = profile.get("name", "the photographer")
-    primary_niche = profile.get("primary_niche", "general photography")
-    city = profile.get("location_city")
-    country = profile.get("location_country")
-    travel = profile.get("willingness_to_travel")
-    secondary = profile.get("secondary_niches") or []
-
-    location = ", ".join(part for part in [city, country] if part) or "their local area"
-    travel_text = "They are willing to travel." if travel else "Assume they primarily serve local businesses."
-    secondary_text = ", ".join(secondary) if secondary else "none provided"
+def build_prompt(area: str) -> str:
+    location = (area or "").strip() or "the specified local area"
 
     return (
-        f"Find strong business leads for photographer '{name}'. "
-        f"Primary niche: {primary_niche}. Secondary niches: {secondary_text}. "
-        f"Base location: {location}. {travel_text} "
-        "Use the photographer-lead-finder skill. Prioritize businesses likely to need this style. "
+        f"Find strong business leads in {location}. "
+        "This lead list must be reusable across many photographers, so do not tailor results to any individual person. "
+        "Prioritize local businesses that are likely to benefit from professional photography or visual content. Make sure you provide the longitude and latitude for each business."
         "Once complete, you MUST call `submit_final_leads` to output your final structured leads."
     )
 

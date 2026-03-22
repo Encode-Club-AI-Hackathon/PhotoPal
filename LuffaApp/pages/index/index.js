@@ -2,6 +2,7 @@
 const app = getApp();
 const luffa = require("../../utils/luffa");
 const { defaultIcon } = require("../../utils/icon");
+const { defaultInfoIcon } = require("../../utils/info");
 const { defaultSettingsIcon } = require("../../utils/settings_icon");
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require("../../config/supabase");
 
@@ -41,6 +42,8 @@ Page({
     subtitle: "Plan shoots, track leads, and focus on the work you love.",
     displayName: "Photographer",
     settingsIcon: defaultSettingsIcon,
+    googleIcon: "/utils/google_icon.png",
+    infoIcon: defaultInfoIcon,
     tickIcon: defaultIcon,
     connectingWallet: false,
     checkingProfile: false,

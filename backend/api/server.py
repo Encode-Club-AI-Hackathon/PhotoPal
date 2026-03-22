@@ -86,7 +86,6 @@ config = {
 app.include_router(lead_finder_router)
 app.include_router(portfolio_analyser_router)
 app.include_router(business_outreach_router)
-app.include_router(gmail_recent_subjects_router)
 
 civic_auth_dep, get_current_user, require_auth = create_auth_dependencies(config)
 
