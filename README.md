@@ -361,6 +361,47 @@ Request:
 }
 ```
 
+### POST /agents/business-matcher
+
+Request:
+
+```json
+{
+	"photographer_id": "wallet_uid",
+	"city": "Bristol",
+	"radius_km": 20,
+	"limit": 5,
+	"use_cache": true,
+	"excluded_business_ids": [101, 102]
+}
+```
+
+### POST /agents/send-gmail
+
+Request:
+
+```json
+{
+	"to_email": "owner@business.com",
+	"subject": "Quick idea for your brand visuals",
+	"body": "Hi, I had a look at your online presence and have a few visual ideas...",
+	"outreach_email_id": 123
+}
+```
+
+### POST /agents/save-gmail-draft
+
+Request:
+
+```json
+{
+	"to_email": "owner@business.com",
+	"subject": "Quick idea for your brand visuals",
+	"body": "Hi, I had a look at your online presence and have a few visual ideas...",
+	"outreach_email_id": 123
+}
+```
+
 ## Authentication Notes
 
 - Backend supports Civic login, callback, logout, and device flow routes.
