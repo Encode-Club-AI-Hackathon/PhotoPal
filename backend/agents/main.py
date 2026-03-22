@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable
 
 from dotenv import load_dotenv
+import requests
 from supabase import create_client, Client
 
 
@@ -85,6 +86,66 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 	c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 	return 6371.0 * c
+
+
+def _geocode_city_coordinates(city: str | None, country: str | None) -> tuple[float, float] | None:
+	normalized_city = str(city or "").strip()
+	normalized_country = str(country or "").strip()
+	if not normalized_city:
+		return None
+
+	queries = [f"{normalized_city}, {normalized_country}".strip(", "), normalized_city]
+	seen_queries: set[str] = set()
+	ordered_queries: list[str] = []
+	for query in queries:
+		if query and query not in seen_queries:
+			seen_queries.add(query)
+			ordered_queries.append(query)
+
+	mapbox_token = os.getenv("MAPBOX_ACCESS_TOKEN") or os.getenv("LUFFA_MAPBOX_ACCESS_TOKEN")
+	if mapbox_token:
+		for query in ordered_queries:
+			url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + requests.utils.quote(query) + ".json"
+			params = {
+				"access_token": mapbox_token,
+				"limit": 1,
+			}
+			try:
+				response = requests.get(url, params=params, timeout=8)
+				response.raise_for_status()
+				payload = response.json()
+				features = payload.get("features") or []
+				if not features:
+					continue
+				center = (features[0].get("center") or [])[:2]
+				if len(center) != 2:
+					continue
+				coordinates = _normalize_coordinates(center[1], center[0])
+				if coordinates:
+					return coordinates
+			except Exception:
+				continue
+
+	for query in ordered_queries:
+		try:
+			response = requests.get(
+				"https://nominatim.openstreetmap.org/search",
+				params={"q": query, "format": "json", "limit": 1},
+				headers={"User-Agent": "PhotoPal/1.0"},
+				timeout=8,
+			)
+			response.raise_for_status()
+			payload = response.json() or []
+			if not payload:
+				continue
+			first_match = payload[0]
+			coordinates = _normalize_coordinates(first_match.get("lat"), first_match.get("lon"))
+			if coordinates:
+				return coordinates
+		except Exception:
+			continue
+
+	return None
 
 
 def _build_business_summary(business: dict[str, Any], fallback_distance_km: float | None = None) -> dict[str, Any]:
@@ -679,6 +740,22 @@ async def run_business_matcher(
 
 	profile = get_single_row("photographer_profiles", "photographer_id", normalized_photographer_id)
 	profile_coordinates = _extract_coordinates(profile)
+	if not profile_coordinates:
+		fallback_coordinates = _geocode_city_coordinates(
+			profile.get("location_city"),
+			profile.get("location_country"),
+		)
+		if fallback_coordinates:
+			profile_coordinates = fallback_coordinates
+			try:
+				supabase.table("photographer_profiles").update(
+					{
+						"latitude": fallback_coordinates[0],
+						"longitude": fallback_coordinates[1],
+					}
+				).eq("photographer_id", normalized_photographer_id).execute()
+			except Exception:
+				pass
 	if not profile_coordinates:
 		raise ValueError("Photographer profile is missing valid latitude/longitude coordinates")
 

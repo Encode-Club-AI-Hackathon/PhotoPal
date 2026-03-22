@@ -378,11 +378,8 @@ Page({
       return;
     }
 
-    const originalProfile = normalizeProfileFromAgent(this.data.agentProfileOriginal || {}, this.data.portfolioUrl, this.data.instagramHandle);
-    const wasEdited = !areProfilesEqual(finalProfile, originalProfile);
-
-    if (!wasEdited) {
-      this.finalizeCompletion();
+    if (!finalProfile.location_city) {
+      this.setData({ errorMessage: "Location city is required to match local opportunities." });
       return;
     }
 
@@ -407,6 +404,16 @@ Page({
     });
 
     geocodeCity(profile.location_city, profile.location_country).then((coords) => {
+      const missingCoordinates = coords.latitude === null || coords.longitude === null;
+      if (missingCoordinates) {
+        this.setData({
+          saving: false,
+          statusMessage: "",
+          errorMessage: "Could not geocode that city. Check spelling and try again.",
+        });
+        return;
+      }
+
       const row = {
         photographer_id: photographerId,
         name: profile.name || null,
