@@ -22,6 +22,7 @@ Built on Luffa App and secured by Civic, the product combines a client experienc
     - [4) Backend Setup (FastAPI + Agents)](#4-backend-setup-fastapi--agents)
     - [5) Luffa App Setup](#5-luffa-app-setup)
     - [6) Download Luffa and Use the App](#6-download-luffa-and-use-the-app)
+- [Workflow](#workflow)
 - [API Endpoints](#api-endpoints)
 - [Authentication Notes](#authentication-notes)
 - [Data Flow Summary](#data-flow-summary)
@@ -249,6 +250,73 @@ node scripts/sync-env-to-config.js
 ## 6) Download Luffa and Use the App
 
 Use [this](https://uk.luffa.im/docs/quickStartGuide/quickStartGuide.html) documentation to install the Luffa SuperBox and import the project.
+
+## Workflow
+
+```mermaid
+flowchart LR
+	subgraph S1[1. Connect Luffa Wallet]
+		A[Connect Luffa Wallet]
+	end
+
+	subgraph S2[2. Connect Google Account]
+		B[Connect Google Account]
+	end
+
+	subgraph S3[3. Complete Profile]
+		C[Complete Profile]
+	end
+
+	subgraph S4[4. Find Opportunities]
+		D[Find Opportunities]
+	end
+
+	subgraph S5[5. Reach Out]
+		E[Reach Out]
+	end
+
+	subgraph S6[6. Receive Payment]
+		F[Receive Payment]
+	end
+
+	A --> B --> C --> D --> E --> F
+
+	subgraph AG[AI Agents and Actions]
+		P[Profile Analyser]
+		BF[Business Finder]
+		M[Match Maker]
+		O[Outreach Generator]
+	end
+
+	C -. invokes .-> P
+	D -. invokes .-> BF
+	D -. invokes .-> M
+	E -. invokes .-> O
+
+	classDef area1 fill:#E3F2FD,stroke:#1E88E5,stroke-width:1px;
+	classDef area2 fill:#E8F5E9,stroke:#43A047,stroke-width:1px;
+	classDef area3 fill:#FFF8E1,stroke:#FB8C00,stroke-width:1px;
+	classDef area4 fill:#FCE4EC,stroke:#D81B60,stroke-width:1px;
+	classDef area5 fill:#E0F7FA,stroke:#00838F,stroke-width:1px;
+	classDef area6 fill:#F3E5F5,stroke:#8E24AA,stroke-width:1px;
+	classDef ai fill:#ECEFF1,stroke:#455A64,stroke-width:1px;
+
+	class A area1;
+	class B area2;
+	class C area3;
+	class D area4;
+	class E area5;
+	class F area6;
+	class P,BF,M,O ai;
+
+	style S1 fill:#F7FBFF,stroke:#1E88E5,stroke-width:2px;
+	style S2 fill:#F5FBF5,stroke:#43A047,stroke-width:2px;
+	style S3 fill:#FFFCF2,stroke:#FB8C00,stroke-width:2px;
+	style S4 fill:#FFF5F8,stroke:#D81B60,stroke-width:2px;
+	style S5 fill:#F2FCFD,stroke:#00838F,stroke-width:2px;
+	style S6 fill:#FAF5FC,stroke:#8E24AA,stroke-width:2px;
+	style AG fill:#F8FAFC,stroke:#455A64,stroke-width:2px;
+```
 
 ## API Endpoints
 
