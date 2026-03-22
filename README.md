@@ -285,7 +285,6 @@ flowchart LR
 		D2[Matched Opportunities Shown]
 		E2[Outreach Sent]
 		F2[Payment Received]
-		A2 --> B2 --> C2 --> D2 --> E2 --> F2
 	end
 
 	A1 -. initializes .-> A2
