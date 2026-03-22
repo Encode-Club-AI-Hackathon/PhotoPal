@@ -255,43 +255,57 @@ Use [this](https://uk.luffa.im/docs/quickStartGuide/quickStartGuide.html) docume
 
 ```mermaid
 flowchart LR
-	subgraph S1[1. Connect Luffa Wallet]
-		A[Connect Luffa Wallet]
+	subgraph P[Primary Journey Steps]
+		A1[1. Connect Luffa Wallet]
+		B1[2. Connect Google Account]
+		C1[3. Complete Profile]
+		D1[4. Find Opportunities]
+		E1[5. Reach Out]
+		F1[6. Receive Payment]
+		A1 --> B1 --> C1 --> D1 --> E1 --> F1
 	end
 
-	subgraph S2[2. Connect Google Account]
-		B[Connect Google Account]
+	subgraph AG[AI Agents and Actions - Core]
+		P1[Profile Analyser]
+		P2[Extract Photographer Attributes]
+		BF1[Business Finder]
+		BF2[Find Local Business Leads]
+		M1[Match Maker]
+		M2[Score and Rank Matches]
+		O1[Outreach Generator]
+		O2[Produce Personalized Message]
+
+		P1 --> P2
+		BF1 --> BF2
+		M1 --> M2
+		O1 --> O2
 	end
 
-	subgraph S3[3. Complete Profile]
-		C[Complete Profile]
+	subgraph S[Secondary Outcomes]
+		A2[Wallet Session Active]
+		B2[Google Account Linked]
+		C2[Profile Ready]
+		D2[Matched Opportunities Shown]
+		E2[Outreach Sent]
+		F2[Payment Received]
+		A2 --> B2 --> C2 --> D2 --> E2 --> F2
 	end
 
-	subgraph S4[4. Find Opportunities]
-		D[Find Opportunities]
-	end
+	A1 -. initializes .-> A2
+	B1 -. confirms .-> B2
 
-	subgraph S5[5. Reach Out]
-		E[Reach Out]
-	end
+	C1 -. invokes .-> P1
+	P2 -. updates .-> C2
 
-	subgraph S6[6. Receive Payment]
-		F[Receive Payment]
-	end
+	D1 -. invokes .-> BF1
+	D1 -. invokes .-> M1
+	BF2 -. feeds .-> D2
+	M2 -. feeds .-> D2
 
-	A --> B --> C --> D --> E --> F
+	E1 -. invokes .-> O1
+	O2 -. produces .-> E2
 
-	subgraph AG[AI Agents and Actions]
-		P[Profile Analyser]
-		BF[Business Finder]
-		M[Match Maker]
-		O[Outreach Generator]
-	end
-
-	C -. invokes .-> P
-	D -. invokes .-> BF
-	D -. invokes .-> M
-	E -. invokes .-> O
+	F1 -. closes .-> F2
 
 	classDef area1 fill:#E3F2FD,stroke:#1E88E5,stroke-width:1px;
 	classDef area2 fill:#E8F5E9,stroke:#43A047,stroke-width:1px;
@@ -301,20 +315,16 @@ flowchart LR
 	classDef area6 fill:#F3E5F5,stroke:#8E24AA,stroke-width:1px;
 	classDef ai fill:#ECEFF1,stroke:#455A64,stroke-width:1px;
 
-	class A area1;
-	class B area2;
-	class C area3;
-	class D area4;
-	class E area5;
-	class F area6;
-	class P,BF,M,O ai;
+	class A1,A2 area1;
+	class B1,B2 area2;
+	class C1,C2 area3;
+	class D1,D2 area4;
+	class E1,E2 area5;
+	class F1,F2 area6;
+	class P1,P2,BF1,BF2,M1,M2,O1,O2 ai;
 
-	style S1 fill:#F7FBFF,stroke:#1E88E5,stroke-width:2px;
-	style S2 fill:#F5FBF5,stroke:#43A047,stroke-width:2px;
-	style S3 fill:#FFFCF2,stroke:#FB8C00,stroke-width:2px;
-	style S4 fill:#FFF5F8,stroke:#D81B60,stroke-width:2px;
-	style S5 fill:#F2FCFD,stroke:#00838F,stroke-width:2px;
-	style S6 fill:#FAF5FC,stroke:#8E24AA,stroke-width:2px;
+	style P fill:#FFFFFF,stroke:#94A3B8,stroke-width:2px;
+	style S fill:#FFFFFF,stroke:#94A3B8,stroke-width:2px;
 	style AG fill:#F8FAFC,stroke:#455A64,stroke-width:2px;
 ```
 
