@@ -38,13 +38,12 @@ Page({
     subtitle: "Plan shoots, track leads, and focus on the work you love.",
     displayName: "Photographer",
     settingsIcon: defaultSettingsIcon,
-    title: "PhotoPal",
-    subtitle: "Plan shoots, track leads, and focus on the work you love.",
-    displayName: "Photographer",
     settingsIcon: defaultSettingsIcon,
     googleIcon: "/utils/google_icon.png",
     infoIcon: defaultInfoIcon,
     tickIcon: defaultIcon,
+    auth: false,
+    bootLoading: true,
     connectingWallet: false,
     checkingProfile: false,
     walletConnected: false,
@@ -61,15 +60,18 @@ Page({
   },
   onLoad: function () {
     this.updateDisplayName();
-    this.updateDisplayName();
+    this.syncAuthState();
     this.syncWalletState();
     this.resumePendingAuthSession();
   },
   onShow: function () {
     this.updateDisplayName();
-    this.updateDisplayName();
+    this.syncAuthState();
     this.syncWalletState();
     this.resumePendingAuthSession();
+  },
+  syncAuthState: function () {
+    this.setData({ auth: this.isLoggedIn() });
   },
   updateDisplayName: function () {
     const userInfo = app.globalData.userInfo || {};
@@ -87,6 +89,7 @@ Page({
         walletNickname: wallet.nickname || "",
         walletUid: wallet.uid || "",
         walletCid: wallet.cid || "",
+        bootLoading: true,
       });
       this.updateDisplayName();
       this.checkPhotographerProfile(wallet.uid || "");
@@ -101,6 +104,7 @@ Page({
       walletNickname: "",
       walletUid: "",
       walletCid: "",
+      bootLoading: false,
     });
     this.updateDisplayName();
   },
@@ -109,6 +113,7 @@ Page({
       this.setData({
         hasPhotographerProfile: !!exists,
         checkingProfile: false,
+        bootLoading: false,
       });
       if (typeof onDone === "function") onDone(!!exists);
     };
@@ -182,6 +187,13 @@ Page({
   goToSettings: function () {
     wx.navigateTo({
       url: "../settings/settings",
+    });
+  },
+  showAbout: function () {
+    wx.showModal({
+      title: "About PhotoPal",
+      content: "PhotoPal helps photographers discover and contact relevant local businesses faster.",
+      showCancel: false,
     });
   },
   goToSuggestedOpportunities: function () {
@@ -364,6 +376,7 @@ Page({
           wx.setStorageSync("auth", app.globalData.auth);
           this.clearPendingAuthSession();
           this.stopLoginPolling();
+          this.syncAuthState();
           wx.showToast({ title: "Login successful", icon: "success" });
           return;
         }
@@ -442,95 +455,111 @@ Page({
     wx.removeStorageSync("auth");
     this.clearPendingAuthSession();
     this.stopLoginPolling();
+    this.syncAuthState();
     wx.showToast({ title: "Logged out", icon: "none" });
   },
 
-  fetchRecentGmailSubjects: function () {
-    if (this.data.loadingGmailSubjects) {
+  copyAuthUrl: function () {
+    const verificationUrl = (this.data.authVerificationUrl || "").trim();
+    if (!verificationUrl) {
+      wx.showToast({ title: "No URL yet", icon: "none" });
       return;
     }
 
-    if (!this.isLoggedIn()) {
-      wx.showToast({ title: "Login first", icon: "none" });
-      return;
-    }
-
-    this.setData({ loadingGmailSubjects: true });
-
-    const auth = app.globalData.auth || wx.getStorageSync("auth") || {};
-    const accessToken = auth.accessToken || "";
-    if (!accessToken) {
-      this.setData({ loadingGmailSubjects: false });
-      wx.showToast({ title: "Missing access token", icon: "none" });
-      return;
-    }
-
-    requestAsync({
-      url: "https://gmail.googleapis.com/gmail/v1/users/me/messages",
-      method: "GET",
-      header: {
-        Authorization: `Bearer ${accessToken}`,
+    wx.setClipboardData({
+      data: verificationUrl,
+      success: () => {
+        wx.showToast({ title: "URL copied", icon: "success" });
       },
-      data: {
-        maxResults: 5,
-      },
-    })
-      .then((listRes) => {
-        if (!(listRes.statusCode >= 200 && listRes.statusCode < 300)) {
-          const detail = (listRes.data && (listRes.data.error_description || listRes.data.error)) || "Gmail request failed";
-          throw new Error(String(detail));
-        }
-
-        const messages = (listRes.data && listRes.data.messages) || [];
-        if (!messages.length) {
-          wx.showToast({ title: "No emails found", icon: "none" });
-          return [];
-        }
-
-        const requests = messages.slice(0, 5).map((msg) =>
-          requestAsync({
-            url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
-            method: "GET",
-            header: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            data: {
-              format: "metadata",
-              metadataHeaders: "Subject",
-            },
-          }),
-        );
-
-        return Promise.all(requests);
-      })
-      .then((messageResponses) => {
-        if (!Array.isArray(messageResponses) || !messageResponses.length) {
-          return;
-        }
-
-        const subjects = messageResponses
-          .map((res) => {
-            const headers = (res.data && res.data.payload && res.data.payload.headers) || [];
-            const subjectHeader = headers.find((h) => (h.name || "").toLowerCase() === "subject");
-            return (subjectHeader && subjectHeader.value) || "(No subject)";
-          })
-          .slice(0, 5);
-
-        const lines = subjects.map((subject, index) => `${index + 1}. ${subject}`).join("\n");
-        wx.showModal({
-          title: "Last 5 Email Subjects",
-          content: lines,
-          showCancel: false,
-        });
-      })
-      .catch((err) => {
-        const msg = String((err && err.message) || "Gmail request failed").slice(0, 30);
-        wx.showToast({ title: msg || "Request failed", icon: "none" });
-      })
-      .finally(() => {
-        this.setData({ loadingGmailSubjects: false });
-      });
+    });
   },
+
+  // fetchRecentGmailSubjects: function () {
+  //   if (this.data.loadingGmailSubjects) {
+  //     return;
+  //   }
+
+  //   if (!this.isLoggedIn()) {
+  //     wx.showToast({ title: "Login first", icon: "none" });
+  //     return;
+  //   }
+
+  //   this.setData({ loadingGmailSubjects: true });
+
+  //   const auth = app.globalData.auth || wx.getStorageSync("auth") || {};
+  //   const accessToken = auth.accessToken || "";
+  //   if (!accessToken) {
+  //     this.setData({ loadingGmailSubjects: false });
+  //     wx.showToast({ title: "Missing access token", icon: "none" });
+  //     return;
+  //   }
+
+  //   requestAsync({
+  //     url: "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+  //     method: "GET",
+  //     header: {
+  //       Authorization: `Bearer ${accessToken}`,
+  //     },
+  //     data: {
+  //       maxResults: 5,
+  //     },
+  //   })
+  //     .then((listRes) => {
+  //       if (!(listRes.statusCode >= 200 && listRes.statusCode < 300)) {
+  //         const detail = (listRes.data && (listRes.data.error_description || listRes.data.error)) || "Gmail request failed";
+  //         throw new Error(String(detail));
+  //       }
+
+  //       const messages = (listRes.data && listRes.data.messages) || [];
+  //       if (!messages.length) {
+  //         wx.showToast({ title: "No emails found", icon: "none" });
+  //         return [];
+  //       }
+
+  //       const requests = messages.slice(0, 5).map((msg) =>
+  //         requestAsync({
+  //           url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
+  //           method: "GET",
+  //           header: {
+  //             Authorization: `Bearer ${accessToken}`,
+  //           },
+  //           data: {
+  //             format: "metadata",
+  //             metadataHeaders: "Subject",
+  //           },
+  //         }),
+  //       );
+
+  //       return Promise.all(requests);
+  //     })
+  //     .then((messageResponses) => {
+  //       if (!Array.isArray(messageResponses) || !messageResponses.length) {
+  //         return;
+  //       }
+
+  //       const subjects = messageResponses
+  //         .map((res) => {
+  //           const headers = (res.data && res.data.payload && res.data.payload.headers) || [];
+  //           const subjectHeader = headers.find((h) => (h.name || "").toLowerCase() === "subject");
+  //           return (subjectHeader && subjectHeader.value) || "(No subject)";
+  //         })
+  //         .slice(0, 5);
+
+  //       const lines = subjects.map((subject, index) => `${index + 1}. ${subject}`).join("\n");
+  //       wx.showModal({
+  //         title: "Last 5 Email Subjects",
+  //         content: lines,
+  //         showCancel: false,
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       const msg = String((err && err.message) || "Gmail request failed").slice(0, 30);
+  //       wx.showToast({ title: msg || "Request failed", icon: "none" });
+  //     })
+  //     .finally(() => {
+  //       this.setData({ loadingGmailSubjects: false });
+  //     });
+  // },
 
   onHide: function () {
     this.setData({ authPolling: false });

@@ -10,51 +10,75 @@
     </button>
   </view>
 
-  <view class="wallet-status-row" wx:if="{{ walletConnected }}">
-    <image class="wallet-status-icon" src="{{ tickIcon }}" mode="aspectFit"></image>
-    <text class="wallet-status-title">Wallet Connected</text>
-  </view>
-
   <view class="hero-card">
     <text class="brand-label">{{ title }}</text>
     <text class="welcome-title">Welcome, {{ displayName }}</text>
     <text class="welcome-subtitle">{{ subtitle }}</text>
+
+    <view class="status-row">
+      <view class="status-pill {{ walletConnected ? 'status-pill-on' : 'status-pill-off' }}">
+        <text>{{ walletConnected ? "Wallet Connected" : "Wallet Not Connected" }}</text>
+      </view>
+      <view class="status-pill {{ hasPhotographerProfile ? 'status-pill-on' : 'status-pill-off' }}" wx:if="{{ walletConnected }}">
+        <text>{{ hasPhotographerProfile ? "Profile Ready" : "Profile Needed" }}</text>
+      </view>
+    </view>
   </view>
 
-  <view class="auth-center-wrap" wx:if="{{ showAuthCenter }}">
-    <button class="primary-btn auth-btn" bindtap="onConnectWallet" loading="{{ connectingWallet }}" disabled="{{ connectingWallet }}">
-      {{ connectingWallet ? "Connecting Wallet..." : "Connect Wallet" }}
-    </button>
+  <view class="inline-loading" wx:if="{{ bootLoading || checkingProfile }}">
+    <view class="spinner"></view>
+    <text class="inline-loading-text">Checking your profile state...</text>
   </view>
 
-  <view class="actions-wrap" wx:if="{{ !showAuthCenter }}">
+  <view class="auth-progress-card" wx:if="{{ authPolling }}">
+    <text class="auth-progress-title">Google login in progress</text>
+    <text class="auth-progress-subtitle">Complete authentication in your browser and return here.</text>
+    <!-- <text class="auth-progress-code" wx:if="{{ authUserCode }}">Code: {{ authUserCode }}</text> -->
+    <button class="secondary-btn" wx:if="{{ authVerificationUrl }}" bindtap="copyAuthUrl">Copy Verification URL</button>
+  </view>
+
+  <view class="actions-wrap">
     <button
       class="secondary-btn action-row-btn"
       wx:if="{{ !walletConnected }}"
       bindtap="onConnectWallet"
       loading="{{ connectingWallet }}"
-      disabled="{{ connectingWallet }}"
+      disabled="{{ connectingWallet || bootLoading }}"
     >
       {{ connectingWallet ? "Connecting Wallet..." : "Connect Wallet" }}
     </button>
-    <button class="secondary-btn action-row-btn" wx:if="{{ walletConnected && !hasPhotographerProfile && !checkingProfile }}" bindtap="goToProfileIntake">
+    <button
+      class="secondary-btn action-row-btn"
+      wx:if="{{ walletConnected && !hasPhotographerProfile && !checkingProfile }}"
+      bindtap="goToProfileIntake"
+      disabled="{{ bootLoading }}"
+    >
       Complete Profile for Analysis
     </button>
-    <button class="secondary-btn action-row-btn" wx:if="{{ walletConnected && hasPhotographerProfile }}" bindtap="goToSuggestedOpportunities">
+    <button
+      class="secondary-btn action-row-btn"
+      wx:if="{{ walletConnected && hasPhotographerProfile }}"
+      bindtap="goToSuggestedOpportunities"
+      disabled="{{ bootLoading }}"
+    >
       View Suggested Opportunities
     </button>
-    <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects }}">
+    <!-- <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects || !auth }}">
       {{ loadingGmailSubjects ? "Fetching Gmail Subjects..." : "Get Last 5 Gmail Subjects" }}
-    </button>
+    </button> -->
   </view>
 
   <view class="google-connect-card" wx:if="{{ !auth }}">
-    <text class="google-connect-title">Want to seamlessly contact employers?</text>
-    <text class="google-connect-subtitle">Connect your Google account to streamline outreach and follow-ups.</text>
-    <button class="google-connect-btn" bindtap="handleLogin">
+    <text class="google-connect-title">Connect Google for fast outreach</text>
+    <text class="google-connect-subtitle">Send and save drafts directly from opportunities.</text>
+    <button class="google-connect-btn" bindtap="handleLogin" loading="{{ authPolling }}" disabled="{{ authPolling }}">
       <image class="google-connect-icon" src="{{ googleIcon }}" mode="aspectFit"></image>
-      <text>Connect</text>
+      <text>{{ authPolling ? "Waiting for approval..." : "Connect Google" }}</text>
     </button>
   </view>
-  <button class="secondary-btn" wx:if="{{ auth }}" bindtap="handleLogout">Logout</button>
+
+  <view class="google-connected" wx:if="{{ auth }}">
+    <text class="google-connected-text">Google account connected.</text>
+    <button class="secondary-btn" bindtap="handleLogout">Logout</button>
+  </view>
 </view>

@@ -1,5 +1,19 @@
 <view class="container page">
-  <view class="card" wx:if="{{hasPhotographerProfile && photographerProfile}}">
+  <view class="status-card" wx:if="{{statusMessage && !loadingProfile}}">
+    <text class="status-text">{{statusMessage}}</text>
+  </view>
+
+  <view class="loading-card" wx:if="{{loadingProfile}}">
+    <view class="spinner"></view>
+    <text class="loading-text">Loading profile details...</text>
+  </view>
+
+  <view class="error-card" wx:if="{{profileError && !loadingProfile}}">
+    <text class="error-text">{{profileError}}</text>
+    <button class="secondary-button" bindtap="refreshProfileData">Try Again</button>
+  </view>
+
+  <view class="card" wx:if="{{hasPhotographerProfile && photographerProfile && !loadingProfile}}">
     <text class="section-title">Photographer Details</text>
     <view class="kv-row"><text class="kv-key">Name</text><view class="kv-value"><text>{{photographerProfile.name || '-'}}</text></view></view>
     <view class="kv-stack-row">
@@ -38,9 +52,9 @@
     </view>
     <view class="kv-row"><text class="kv-key">City</text><view class="kv-value"><text>{{photographerProfile.locationCity || '-'}}</text></view></view>
     <view class="kv-row"><text class="kv-key">Country</text><view class="kv-value"><text>{{photographerProfile.countryDisplay || '-'}}</text></view></view>
-    <view class="kv-row"><text class="kv-key">Human Presence</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.humanPresence === 'Yes'}}">✓ Yes</text><text class="tag-no" wx:elif="{{photographerProfile.humanPresence === 'No'}}">✗ No</text><text wx:else>{{photographerProfile.humanPresence || '-'}}</text></view></view>
-    <view class="kv-row"><text class="kv-key">Willing to Travel</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.willingnessToTravel === 'Yes'}}">✓ Yes</text><text class="tag-no" wx:elif="{{photographerProfile.willingnessToTravel === 'No'}}">✗ No</text><text wx:else>{{photographerProfile.willingnessToTravel || '-'}}</text></view></view>
-    <view class="kv-row"><text class="kv-key">Studio Access</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.studioAccess === 'Yes'}}">✓ Yes</text><text class="tag-no" wx:elif="{{photographerProfile.studioAccess === 'No'}}">✗ No</text><text wx:else>{{photographerProfile.studioAccess || '-'}}</text></view></view>
+    <view class="kv-row"><text class="kv-key">Human Presence</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.humanPresence === 'Yes'}}">Yes</text><text class="tag-no" wx:elif="{{photographerProfile.humanPresence === 'No'}}">No</text><text wx:else>{{photographerProfile.humanPresence || '-'}}</text></view></view>
+    <view class="kv-row"><text class="kv-key">Willing to Travel</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.willingnessToTravel === 'Yes'}}">Yes</text><text class="tag-no" wx:elif="{{photographerProfile.willingnessToTravel === 'No'}}">No</text><text wx:else>{{photographerProfile.willingnessToTravel || '-'}}</text></view></view>
+    <view class="kv-row"><text class="kv-key">Studio Access</text><view class="kv-value"><text class="tag-yes" wx:if="{{photographerProfile.studioAccess === 'Yes'}}">Yes</text><text class="tag-no" wx:elif="{{photographerProfile.studioAccess === 'No'}}">No</text><text wx:else>{{photographerProfile.studioAccess || '-'}}</text></view></view>
 
     <view class="button-row">
       <button class="button-half secondary-btn" wx:if="{{photographerProfile.websiteUrl}}" bindtap="openWebsite">Open Portfolio</button>
@@ -49,6 +63,16 @@
     <view class="refresh-row">
       <button class="secondary-button refresh-row-btn" bindtap="refreshProfileData" loading="{{loadingProfile}}" disabled="{{loadingProfile}}">Refresh Profile</button>
     </view>
-    <text class="error-text" wx:if="{{profileError}}">{{profileError}}</text>
+  </view>
+
+  <view class="empty-card" wx:if="{{!loadingProfile && !hasPhotographerProfile && walletConnected}}">
+    <text class="empty-title">No profile yet</text>
+    <text class="empty-subtitle">Complete your profile so we can match better opportunities.</text>
+    <button class="primary-btn" bindtap="goToProfileIntake">Complete Profile</button>
+  </view>
+
+  <view class="empty-card" wx:if="{{!loadingProfile && !walletConnected}}">
+    <text class="empty-title">Wallet not connected</text>
+    <text class="empty-subtitle">Connect your wallet from Home or Settings to view your profile.</text>
   </view>
 </view>
