@@ -1,6 +1,7 @@
 const app = getApp();
 const { AGENT_API_BASE_URL, getAgentRequestHeaders } = require("../../config/agent_api");
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = require("../../config/supabase");
+const { MAPBOX_ACCESS_TOKEN } = require("../../config/maps");
 
 const AGENT_ANALYZE_TIMEOUT_MS = 420000;
 
@@ -44,6 +45,26 @@ function normalizeProfileFromAgent(rawProfile, fallbackWebsiteUrl, fallbackInsta
   };
 }
 
+function normalizeProfileFromStoredProfile(profile) {
+  return normalizeProfileFromAgent(
+    {
+      name: profile.name,
+      primary_niche: profile.primaryNiche,
+      contact_email: profile.contactEmail,
+      website_url: profile.websiteUrl,
+      instagram_handle: profile.instagramHandle,
+      secondary_niches: profile.secondaryNichesList || profile.secondaryNiches,
+      human_presence: profile.humanPresence,
+      location_city: profile.locationCity,
+      location_country: profile.locationCountry,
+      willingness_to_travel: profile.willingnessToTravel,
+      studio_access: profile.studioAccess,
+    },
+    profile.websiteUrl,
+    profile.instagramHandle,
+  );
+}
+
 function extractJsonObject(text) {
   const source = `${text || ""}`.trim();
   if (!source) return null;
@@ -80,52 +101,90 @@ function areProfilesEqual(left, right) {
   return JSON.stringify(comparableProfile(left)) === JSON.stringify(comparableProfile(right));
 }
 
+function geocodeCity(city, country) {
+  return new Promise((resolve) => {
+    if (!city || !MAPBOX_ACCESS_TOKEN) {
+      resolve({ latitude: null, longitude: null });
+      return;
+    }
+
+    const query = country ? `${city}, ${country}` : city;
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?access_token=${MAPBOX_ACCESS_TOKEN}&limit=1`;
+
+    wx.request({
+      url: url,
+      method: "GET",
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.features && res.data.features.length > 0) {
+          const coords = res.data.features[0].geometry.coordinates;
+          resolve({ latitude: coords[1], longitude: coords[0] });
+          return;
+        }
+        resolve({ latitude: null, longitude: null });
+      },
+      fail: () => {
+        resolve({ latitude: null, longitude: null });
+      },
+    });
+  });
+}
+
 Page({
   data: {
     step: "initial",
     submitting: false,
     saving: false,
+    pageLoading: true,
     editMode: false,
-    name: '',
-    contactEmail: '',
-    locationCity: '',
-    locationCountry: '',
-    instagramHandle: '',
-    portfolioUrl: '',
-    primaryNiche: '',
-    secondaryNiches: '',
+    statusMessage: "",
+    errorMessage: "",
+    name: "",
+    contactEmail: "",
+    locationCity: "",
+    locationCountry: "",
+    instagramHandle: "",
+    portfolioUrl: "",
+    primaryNiche: "",
+    secondaryNiches: "",
     humanPresence: false,
     willingToTravel: false,
     studioAccess: false,
     agentProfileOriginal: null,
   },
   onLoad: function (options) {
-    const editMode = options && options.mode === 'edit'
-    
+    this.setData({ pageLoading: true, statusMessage: "", errorMessage: "" });
+
+    const editMode = options && options.mode === "edit";
     if (editMode && options.profile) {
       try {
-        const profile = JSON.parse(decodeURIComponent(options.profile))
-        this.populateEditForm(profile)
+        const profile = JSON.parse(decodeURIComponent(options.profile));
+        this.populateEditForm(profile);
       } catch (err) {
-        console.error('Failed to parse profile:', err)
-        this.resetForm()
+        console.error("Failed to parse profile:", err);
+        this.resetForm();
+        this.setData({ errorMessage: "Could not read profile data." });
       }
     } else {
-      this.resetForm()
+      this.resetForm();
     }
+
+    this.setData({ pageLoading: false });
   },
   resetForm: function () {
     this.setData({
-      step: 'initial',
+      step: "initial",
       editMode: false,
-      name: '',
-      contactEmail: '',
-      locationCity: '',
-      locationCountry: '',
-      instagramHandle: '',
-      portfolioUrl: '',
-      primaryNiche: '',
-      secondaryNiches: '',
+      statusMessage: "",
+      errorMessage: "",
+      name: "",
+      contactEmail: "",
+      locationCity: "",
+      locationCountry: "",
+      instagramHandle: "",
+      portfolioUrl: "",
+      primaryNiche: "",
+      secondaryNiches: "",
       humanPresence: false,
       willingToTravel: false,
       studioAccess: false,
@@ -133,28 +192,28 @@ Page({
     });
   },
   onNameInput: function (e) {
-    this.setData({ name: e.detail.value });
+    this.setData({ name: e.detail.value, errorMessage: "" });
   },
   onContactEmailInput: function (e) {
-    this.setData({ contactEmail: e.detail.value });
+    this.setData({ contactEmail: e.detail.value, errorMessage: "" });
   },
   onLocationCityInput: function (e) {
-    this.setData({ locationCity: e.detail.value });
+    this.setData({ locationCity: e.detail.value, errorMessage: "" });
   },
   onLocationCountryInput: function (e) {
-    this.setData({ locationCountry: e.detail.value });
+    this.setData({ locationCountry: e.detail.value, errorMessage: "" });
   },
   onInstagramInput: function (e) {
-    this.setData({ instagramHandle: e.detail.value });
+    this.setData({ instagramHandle: e.detail.value, errorMessage: "" });
   },
   onPortfolioUrlInput: function (e) {
-    this.setData({ portfolioUrl: e.detail.value });
+    this.setData({ portfolioUrl: e.detail.value, errorMessage: "" });
   },
   onPrimaryNicheInput: function (e) {
-    this.setData({ primaryNiche: e.detail.value });
+    this.setData({ primaryNiche: e.detail.value, errorMessage: "" });
   },
   onSecondaryNichesInput: function (e) {
-    this.setData({ secondaryNiches: e.detail.value });
+    this.setData({ secondaryNiches: e.detail.value, errorMessage: "" });
   },
   onHumanPresenceChange: function (e) {
     this.setData({ humanPresence: !!e.detail.value });
@@ -166,36 +225,29 @@ Page({
     this.setData({ studioAccess: !!e.detail.value });
   },
   populateEditForm: function (profile) {
+    const normalized = normalizeProfileFromStoredProfile(profile || {});
+
     this.setData({
-      step: 'confirm',
+      step: "confirm",
       editMode: true,
-      name: profile.name || '',
-      contactEmail: profile.contactEmail || '',
-      locationCity: profile.locationCity || '',
-      locationCountry: profile.locationCountry || '',
-      instagramHandle: profile.instagramHandle || '',
-      portfolioUrl: profile.websiteUrl || '',
-      primaryNiche: profile.primaryNiche || '',
-      secondaryNiches: (Array.isArray(profile.secondaryNiches) ? profile.secondaryNiches : (profile.secondaryNiches || '').split(',')).filter(Boolean).join(', '),
-      humanPresence: (profile.humanPresence === 'Yes' || profile.humanPresence === true),
-      willingToTravel: (profile.willingnessToTravel === 'Yes' || profile.willingnessToTravel === true),
-      studioAccess: (profile.studioAccess === 'Yes' || profile.studioAccess === true),
-      agentProfileOriginal: null
-    })
+      statusMessage: "Editing your existing profile.",
+      errorMessage: "",
+      name: normalized.name || "",
+      contactEmail: normalized.contact_email || "",
+      locationCity: normalized.location_city || "",
+      locationCountry: normalized.location_country || "",
+      instagramHandle: normalized.instagram_handle || "",
+      portfolioUrl: normalized.website_url || "",
+      primaryNiche: normalized.primary_niche || "",
+      secondaryNiches: (normalized.secondary_niches || []).join(", "),
+      humanPresence: !!normalized.human_presence,
+      willingToTravel: !!normalized.willingness_to_travel,
+      studioAccess: !!normalized.studio_access,
+      agentProfileOriginal: normalized,
+    });
   },
-  onNameInput: function (e) { this.setData({ name: e.detail.value }) },
-  onContactEmailInput: function (e) { this.setData({ contactEmail: e.detail.value }) },
-  onLocationCityInput: function (e) { this.setData({ locationCity: e.detail.value }) },
-  onLocationCountryInput: function (e) { this.setData({ locationCountry: e.detail.value }) },
-  onInstagramInput: function (e) { this.setData({ instagramHandle: e.detail.value }) },
-  onPortfolioUrlInput: function (e) { this.setData({ portfolioUrl: e.detail.value }) },
-  onPrimaryNicheInput: function (e) { this.setData({ primaryNiche: e.detail.value }) },
-  onSecondaryNichesInput: function (e) { this.setData({ secondaryNiches: e.detail.value }) },
-  onHumanPresenceChange: function (e) { this.setData({ humanPresence: !!e.detail.value }) },
-  onTravelChange: function (e) { this.setData({ willingToTravel: !!e.detail.value }) },
-  onStudioChange: function (e) { this.setData({ studioAccess: !!e.detail.value }) },
   onSubmit: function () {
-    if (this.data.submitting || this.data.saving) return;
+    if (this.data.pageLoading || this.data.submitting || this.data.saving) return;
 
     if (this.data.step === "confirm") {
       this.onConfirmDetails();
@@ -208,13 +260,13 @@ Page({
     if (this.data.submitting) return;
 
     if (!AGENT_API_BASE_URL) {
-      wx.showToast({ title: "Set LUFFA_AGENT_API_BASE_URL", icon: "none" });
+      this.setData({ errorMessage: "Set LUFFA_AGENT_API_BASE_URL first." });
       return;
     }
 
     const websiteUrl = normalizeUrl(this.data.portfolioUrl);
     if (!websiteUrl) {
-      wx.showToast({ title: "Portfolio link is required", icon: "none" });
+      this.setData({ errorMessage: "Portfolio link is required." });
       return;
     }
 
@@ -224,7 +276,11 @@ Page({
       photographer_id: (app.globalData.wallet && app.globalData.wallet.uid) || null,
     };
 
-    this.setData({ submitting: true });
+    this.setData({
+      submitting: true,
+      errorMessage: "",
+      statusMessage: "Analyzing your portfolio. This can take a minute...",
+    });
 
     wx.request({
       url: `${AGENT_API_BASE_URL}/agents/portfolio-analyser`,
@@ -236,22 +292,21 @@ Page({
         if (res.statusCode >= 200 && res.statusCode < 300) {
           const agentProfile = this.extractAgentProfile(res.data, websiteUrl, this.data.instagramHandle);
           if (!agentProfile || !agentProfile.website_url) {
-            wx.showToast({ title: "Agent returned no profile", icon: "none" });
+            this.setData({ errorMessage: "Analyzer did not return a valid profile." });
             return;
           }
 
           this.populateConfirmForm(agentProfile);
-
-          wx.showToast({ title: "Review auto-filled details", icon: "none" });
+          this.setData({ statusMessage: "Review the details and confirm when ready." });
           return;
         }
 
         const detail = (res.data && (res.data.detail || res.data.error)) || "Request failed";
-        wx.showToast({ title: `${detail}`.slice(0, 30), icon: "none" });
+        this.setData({ errorMessage: `${detail}`.slice(0, 80) });
       },
       fail: (err) => {
         const timeoutErr = err && err.errMsg && err.errMsg.includes("timed out");
-        wx.showToast({ title: timeoutErr ? "Analysis timed out, try again" : "API unreachable", icon: "none" });
+        this.setData({ errorMessage: timeoutErr ? "Analysis timed out. Try again." : "Analyzer request failed." });
         console.error("portfolio-analyser request failed:", err);
       },
       complete: () => {
@@ -282,6 +337,7 @@ Page({
   populateConfirmForm: function (profile) {
     this.setData({
       step: "confirm",
+      errorMessage: "",
       name: profile.name || "",
       contactEmail: profile.contact_email || "",
       locationCity: profile.location_city || "",
@@ -318,7 +374,7 @@ Page({
   onConfirmDetails: function () {
     const finalProfile = this.buildProfileFromForm();
     if (!finalProfile.website_url) {
-      wx.showToast({ title: "Portfolio link is required", icon: "none" });
+      this.setData({ errorMessage: "Portfolio link is required." });
       return;
     }
 
@@ -326,7 +382,7 @@ Page({
     const wasEdited = !areProfilesEqual(finalProfile, originalProfile);
 
     if (!wasEdited) {
-      this.finalizeCompletion(finalProfile);
+      this.finalizeCompletion();
       return;
     }
 
@@ -334,65 +390,72 @@ Page({
   },
   saveEditedProfileToSupabase: function (profile) {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_URL.includes("supabase.co")) {
-      wx.showToast({ title: "Supabase config missing", icon: "none" });
+      this.setData({ errorMessage: "Supabase config missing." });
       return;
     }
 
     const photographerId = (app.globalData.wallet && app.globalData.wallet.uid) || "";
     if (!photographerId) {
-      wx.showToast({ title: "Photographer ID missing", icon: "none" });
+      this.setData({ errorMessage: "Photographer ID missing." });
       return;
     }
 
-    const row = {
-      photographer_id: photographerId,
-      name: profile.name || null,
-      primary_niche: profile.primary_niche || null,
-      contact_email: profile.contact_email || null,
-      website_url: profile.website_url || null,
-      instagram_handle: profile.instagram_handle || null,
-      secondary_niches: profile.secondary_niches || [],
-      human_presence: profile.human_presence,
-      location_city: profile.location_city || null,
-      location_country: profile.location_country || null,
-      willingness_to_travel: !!profile.willingness_to_travel,
-      studio_access: !!profile.studio_access,
-    };
+    this.setData({
+      saving: true,
+      errorMessage: "",
+      statusMessage: "Saving your profile updates...",
+    });
 
-    this.setData({ saving: true });
+    geocodeCity(profile.location_city, profile.location_country).then((coords) => {
+      const row = {
+        photographer_id: photographerId,
+        name: profile.name || null,
+        primary_niche: profile.primary_niche || null,
+        contact_email: profile.contact_email || null,
+        website_url: profile.website_url || null,
+        instagram_handle: profile.instagram_handle || null,
+        secondary_niches: profile.secondary_niches || [],
+        human_presence: profile.human_presence,
+        location_city: profile.location_city || null,
+        location_country: profile.location_country || null,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        willingness_to_travel: !!profile.willingness_to_travel,
+        studio_access: !!profile.studio_access,
+      };
 
-    wx.request({
-      url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=photographer_id`,
-      method: "POST",
-      header: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates,return=representation",
-      },
-      data: row,
-      success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          wx.showToast({ title: "Changes saved", icon: "success" });
-          this.finalizeCompletion(profile);
-          return;
-        }
+      wx.request({
+        url: `${SUPABASE_URL}/rest/v1/photographer_profiles?on_conflict=photographer_id`,
+        method: "POST",
+        header: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
+        data: row,
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            this.finalizeCompletion();
+            return;
+          }
 
-        const detail = (res.data && (res.data.message || res.data.error || res.data.details || res.data.hint)) || "Save failed";
-        wx.showToast({ title: `${detail}`.slice(0, 30), icon: "none" });
-        console.error("supabase save failed:", res);
-      },
-      fail: (err) => {
-        wx.showToast({ title: "Save failed", icon: "none" });
-        console.error("supabase save request failed:", err);
-      },
-      complete: () => {
-        this.setData({ saving: false });
-      },
+          const detail = (res.data && (res.data.message || res.data.error || res.data.details || res.data.hint)) || "Save failed";
+          this.setData({ errorMessage: `${detail}`.slice(0, 80) });
+          console.error("supabase save failed:", res);
+        },
+        fail: (err) => {
+          this.setData({ errorMessage: "Save request failed." });
+          console.error("supabase save request failed:", err);
+        },
+        complete: () => {
+          this.setData({ saving: false });
+        },
+      });
     });
   },
-  finalizeCompletion: function (profile) {
-    wx.showToast({ title: "Profile confirmed", icon: "success" });
+  finalizeCompletion: function () {
+    wx.showToast({ title: "Profile saved", icon: "success" });
     setTimeout(() => {
       wx.navigateBack();
     }, 500);

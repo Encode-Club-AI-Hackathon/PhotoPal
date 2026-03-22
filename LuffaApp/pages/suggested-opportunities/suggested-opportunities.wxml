@@ -1,59 +1,98 @@
 <view class="container page">
   <view class="hero">
     <text class="title">Suggested Opportunities</text>
-    <text class="subtitle">Fresh businesses matched for outreach, with contact info on demand.</text>
+    <text class="subtitle">Top local business matches for your photography niche, with fit scoring and quick outreach workflows.</text>
   </view>
 
-  <view class="card" wx:if="{{loading}}">
-    <text class="subtitle">Loading opportunities...</text>
+  <view class="tab-row">
+    <button class="tab-btn {{ activeTab === 'todo' ? 'tab-btn-active' : '' }}" bindtap="setActiveTab" data-tab="todo">Pending ({{ todoCount }})</button>
+    <button class="tab-btn {{ activeTab === 'done' ? 'tab-btn-active' : '' }}" bindtap="setActiveTab" data-tab="done">Reached Out ({{ doneCount }})</button>
   </view>
 
-  <view class="card" wx:if="{{errorMessage}}">
-    <text class="subtitle">{{errorMessage}}</text>
+  <view class="batch-row" wx:if="{{ activeTab === 'todo' && !loading && !errorMessage && leads.length > 0 }}">
+    <button class="batch-btn" bindtap="generateAllVisibleEmails" loading="{{ bulkWriting }}" disabled="{{ bulkWriting || loading }}">
+      {{ bulkWriting ? "Writing Emails..." : "Write All Emails In This Tab" }}
+    </button>
+  </view>
+
+  <view class="status-card" wx:if="{{ statusMessage }}">
+    <text class="status-text">{{ statusMessage }}</text>
+  </view>
+
+  <view class="inline-loading" wx:if="{{ refreshing }}">
+    <view class="spinner"></view>
+    <text class="inline-loading-text">Refreshing opportunities...</text>
+  </view>
+
+  <view class="skeleton-list" wx:if="{{ loading && allLeads.length === 0 }}">
+    <view class="skeleton-card" wx:for="{{ skeletonRows }}" wx:key="*this">
+      <view class="skeleton-line skeleton-title"></view>
+      <view class="skeleton-line skeleton-chip"></view>
+      <view class="skeleton-map"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line"></view>
+      <view class="skeleton-actions">
+        <view class="skeleton-btn"></view>
+        <view class="skeleton-btn"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{ errorMessage && allLeads.length === 0 }}">
+    <text class="subtitle">{{ errorMessage }}</text>
     <button class="retry-btn" bindtap="fetchSuggestedLeads">Try again</button>
   </view>
 
-  <view class="card" wx:if="{{!loading && !errorMessage && leads.length === 0}}">
-    <text class="subtitle">No opportunities found yet.</text>
+  <view class="card" wx:if="{{ !loading && !errorMessage && leads.length === 0 && activeTab === 'todo' }}">
+    <text class="subtitle">You have no pending opportunities right now.</text>
   </view>
 
-  <view class="opportunity-list" wx:if="{{!loading && !errorMessage && leads.length > 0}}">
-    <view class="opportunity-card" wx:for="{{leads}}" wx:key="leadKey" wx:for-index="idx">
+  <view class="card" wx:if="{{ !loading && !errorMessage && leads.length === 0 && activeTab === 'done' }}">
+    <text class="subtitle">No reached-out opportunities yet.</text>
+  </view>
+
+  <view class="opportunity-list {{ refreshing ? 'list-refreshing' : '' }}" wx:if="{{ !errorMessage && leads.length > 0 }}">
+    <view class="opportunity-card" wx:for="{{ leads }}" wx:key="leadKey" wx:for-index="idx">
       <view class="card-header">
         <view class="card-title-wrap">
-          <text class="business-name">{{item.businessName}}</text>
+          <text class="business-name">{{ item.businessName }}</text>
         </view>
-        <text class="type-pill">{{item.type}}</text>
+        <view class="badge-stack">
+          <text class="fit-pill">Fit {{ item.fitScoreLabel }}</text>
+          <text class="sent-pill" wx:if="{{ item.emailSent }}">Email Sent</text>
+          <text class="draft-pill" wx:if="{{ !item.emailSent && item.draftSaved }}">Draft Saved</text>
+          <text class="type-pill">{{ item.type }}</text>
+        </view>
       </view>
 
       <view class="card-body">
-        <view class="map-block" wx:if="{{item.hasCoordinates}}">
+        <view class="map-block" wx:if="{{ item.hasCoordinates }}">
           <view class="map-head">
             <text class="detail-label">Location</text>
             <button
               class="map-open-btn"
               bindtap="openInMap"
-              data-lat="{{item.latitude}}"
-              data-lon="{{item.longitude}}"
-              data-mapurl="{{item.browserMapUrl}}"
+              data-lat="{{ item.latitude }}"
+              data-lon="{{ item.longitude }}"
+              data-mapurl="{{ item.browserMapUrl }}"
             >
               Open Map
             </button>
           </view>
           <image
-            wx:if="{{item.staticMapUrl}}"
+            wx:if="{{ item.staticMapUrl }}"
             class="location-map"
-            src="{{item.staticMapUrl}}"
+            src="{{ item.staticMapUrl }}"
             mode="aspectFill"
             bindtap="openInMap"
-            data-lat="{{item.latitude}}"
-            data-lon="{{item.longitude}}"
-            data-mapurl="{{item.browserMapUrl}}"
+            data-lat="{{ item.latitude }}"
+            data-lon="{{ item.longitude }}"
+            data-mapurl="{{ item.browserMapUrl }}"
           ></image>
           <view class="map-image-fallback" wx:else>
             <text class="map-fallback-text">Map preview unavailable (set Mapbox token).</text>
           </view>
-          <text class="map-hint">Tap map to open in browser</text>
+          <text class="map-hint">Tap preview to open map</text>
         </view>
 
         <view class="map-fallback" wx:else>
@@ -62,29 +101,100 @@
         </view>
       </view>
 
-      <view class="notes-box" wx:if="{{item.notesNeeds}}">
+      <view class="notes-box" wx:if="{{ item.notesNeeds }}">
         <text class="notes-title">Needs Snapshot</text>
-        <text class="notes-text">{{item.notesNeeds}}</text>
+        <text class="notes-text">{{ item.notesNeeds }}</text>
+      </view>
+
+      <view class="notes-box fit-box" wx:if="{{ item.fitExplanation }}">
+        <text class="notes-title">Why It Fits</text>
+        <text class="notes-text">{{ item.fitExplanation }}</text>
       </view>
 
       <view class="action-row">
-        <button class="ghost-btn" bindtap="openWebsite" data-website="{{item.website}}">Open Website</button>
-        <button class="solid-btn" bindtap="toggleContact" data-lead-key="{{item.leadKey}}">
-          {{activeContactLeadKey === item.leadKey ? 'Hide Contact' : 'Show Contact'}}
+        <button class="ghost-btn" bindtap="openWebsite" data-website="{{ item.website }}">Open Website</button>
+        <button class="solid-btn" bindtap="toggleContact" data-lead-key="{{ item.leadKey }}">
+          {{ activeContactLeadKey === item.leadKey ? "Hide Contact" : "Show Contact" }}
         </button>
       </view>
 
-      <view class="contact-panel" wx:if="{{activeContactLeadKey === item.leadKey}}">
+      <button
+        class="email-generate-btn"
+        bindtap="generateOutreachEmail"
+        data-lead-key="{{ item.leadKey }}"
+        data-business-id="{{ item.id }}"
+        loading="{{ writingLeadKeys[item.leadKey] }}"
+        disabled="{{ writingLeadKeys[item.leadKey] || loading }}"
+      >
+        {{ writingLeadKeys[item.leadKey] ? "Writing Email..." : "Write Outreach Email" }}
+      </button>
+
+      <view class="email-panel" wx:if="{{ item.hasOutreachEmail }}">
+        <text class="email-title">Outreach Email</text>
+        <input
+          class="email-subject-input"
+          placeholder="Subject"
+          value="{{ item.outreachEmailSubject }}"
+          bindinput="onEmailSubjectInput"
+          data-lead-key="{{ item.leadKey }}"
+        />
+        <textarea
+          class="email-body-input"
+          placeholder="Write outreach email body..."
+          value="{{ item.outreachEmailBody }}"
+          bindinput="onEmailBodyInput"
+          data-lead-key="{{ item.leadKey }}"
+          maxlength="-1"
+          show-confirm-bar="false"
+        ></textarea>
+        <text class="email-cta" wx:if="{{ item.outreachCallToAction }}">CTA: {{ item.outreachCallToAction }}</text>
+
+        <button
+          wx:if="{{ !item.emailSent }}"
+          class="email-send-btn"
+          bindtap="sendOrSaveOutreach"
+          data-lead-key="{{ item.leadKey }}"
+          data-business-id="{{ item.id }}"
+          data-outreach-id="{{ item.outreachEmailId }}"
+          data-to-email="{{ item.emailAddress }}"
+          data-subject="{{ item.outreachEmailSubject }}"
+          data-body="{{ item.outreachEmailBody }}"
+          loading="{{ sendingLeadKey === item.leadKey }}"
+          disabled="{{ sendingLeadKey === item.leadKey || loading || (!item.outreachEmailSubject && !item.outreachEmailBody) }}"
+        >
+          {{
+            item.emailAddress
+              ? sendingLeadKey === item.leadKey
+                ? "Sending..."
+                : "Send with Gmail"
+              : sendingLeadKey === item.leadKey
+                ? "Saving..."
+                : "Save to Email Drafts"
+          }}
+        </button>
+
+        <text class="email-hint" wx:if="{{ item.emailSent }}">This email has already been sent.</text>
+
+        <text class="email-hint" wx:if="{{ !item.emailAddress }}">No business email available yet.</text>
+      </view>
+
+      <view class="contact-panel" wx:if="{{ activeContactLeadKey === item.leadKey }}">
         <text class="contact-title">Contact Details</text>
-        <text class="contact-line">Name: {{item.contactName || 'Unknown'}}</text>
-        <text class="contact-line">Email: {{item.emailAddress || 'Not provided'}}</text>
-        <text class="contact-line">Phone: {{item.phoneNumber || 'Not provided'}}</text>
+        <text class="contact-line">Name: {{ item.contactName || "Unknown" }}</text>
+        <text class="contact-line">Email: {{ item.emailAddress || "Not provided" }}</text>
+        <text class="contact-line">Phone: {{ item.phoneNumber || "Not provided" }}</text>
 
         <view class="contact-actions">
-          <button class="mini-btn" bindtap="copyEmail" data-email="{{item.emailAddress}}">Copy Email</button>
-          <button class="mini-btn" bindtap="callPhone" data-phone="{{item.phoneNumber}}">Call</button>
+          <button class="mini-btn" bindtap="copyEmail" data-email="{{ item.emailAddress }}">Copy Email</button>
+          <button class="mini-btn" bindtap="callPhone" data-phone="{{ item.phoneNumber }}">Call</button>
         </view>
       </view>
     </view>
+  </view>
+
+  <view class="more-row" wx:if="{{ activeTab === 'todo' && !errorMessage && leads.length > 0 }}">
+    <button class="more-btn" bindtap="findMoreOpportunities" loading="{{ loading }}" disabled="{{ loading }}">
+      {{ loading ? "Finding More..." : "Get More Businesses" }}
+    </button>
   </view>
 </view>

@@ -1,7 +1,17 @@
-<view class="webview-page" wx:if="{{url}}">
-  <web-view src="{{url}}"></web-view>
+<view class="webview-page" wx:if="{{url && !webviewError}}">
+  <web-view src="{{url}}" bindload="onWebviewLoad" binderror="onWebviewError"></web-view>
+
+  <view class="loading-overlay" wx:if="{{webviewLoading}}">
+    <view class="spinner"></view>
+    <text class="loading-text">Loading page...</text>
+  </view>
 </view>
 
-<view class="empty" wx:else>
-  <text class="empty-text">Unable to load this website.</text>
+<view class="empty" wx:if="{{webviewError || !url}}">
+  <view class="empty-card">
+    <text class="empty-title">Unable to load this website.</text>
+    <text class="empty-text">{{webviewError || 'The link appears to be invalid.'}}</text>
+    <button class="retry-btn" wx:if="{{url}}" bindtap="retryLoad">Retry</button>
+    <button class="back-btn" bindtap="goBack">Go Back</button>
+  </view>
 </view>

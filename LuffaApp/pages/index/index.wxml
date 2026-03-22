@@ -10,51 +10,138 @@
     </button>
   </view>
 
-  <view class="wallet-status-row" wx:if="{{ walletConnected }}">
-    <image class="wallet-status-icon" src="{{ tickIcon }}" mode="aspectFit"></image>
-    <text class="wallet-status-title">Wallet Connected</text>
-  </view>
-
   <view class="hero-card">
     <text class="brand-label">{{ title }}</text>
     <text class="welcome-title">Welcome, {{ displayName }}</text>
     <text class="welcome-subtitle">{{ subtitle }}</text>
+
+    <view class="status-row">
+      <view class="status-pill {{ walletConnected ? 'status-pill-on' : 'status-pill-off' }}">
+        <text>{{ walletConnected ? "Wallet Connected" : "Wallet Not Connected" }}</text>
+      </view>
+      <view class="status-pill {{ hasPhotographerProfile ? 'status-pill-on' : 'status-pill-off' }}" wx:if="{{ walletConnected }}">
+        <text>{{ hasPhotographerProfile ? "Profile Ready" : "Profile Needed" }}</text>
+      </view>
+    </view>
   </view>
 
-  <view class="auth-center-wrap" wx:if="{{ showAuthCenter }}">
-    <button class="primary-btn auth-btn" bindtap="onConnectWallet" loading="{{ connectingWallet }}" disabled="{{ connectingWallet }}">
-      {{ connectingWallet ? "Connecting Wallet..." : "Connect Wallet" }}
-    </button>
+  <!-- ONBOARDING FLOW -->
+  <view class="onboarding-card" wx:if="{{ showOnboarding && onboardingStep < 4 }}">
+    <view class="onboarding-header">
+      <text class="onboarding-title">Getting Started</text>
+      <text class="onboarding-subtitle">Complete these steps to unlock PhotoPal</text>
+    </view>
+
+    <!-- Step 1: Connect Wallet -->
+    <view class="onboarding-step {{ onboardingStep === 1 ? 'step-active' : onboardingStep > 1 ? 'step-completed' : 'step-pending' }}">
+      <view class="step-indicator">
+        <view class="step-number">
+          <text wx:if="{{ onboardingStep > 1 }}">✓</text>
+          <text wx:else>1</text>
+        </view>
+      </view>
+      <view class="step-content">
+        <text class="step-title">Connect Your Wallet</text>
+        <text class="step-description">Securely connect your Web3 wallet to get started.</text>
+      </view>
+      <button wx:if="{{ onboardingStep === 1 }}" class="step-btn" bindtap="onConnectWallet" loading="{{ connectingWallet }}" disabled="{{ connectingWallet }}">
+        {{ connectingWallet ? "Connecting..." : "Connect" }}
+      </button>
+      <view class="step-badge" wx:if="{{ onboardingStep > 1 }}">Done</view>
+    </view>
+
+    <!-- Step 2: Login with Google -->
+    <view class="onboarding-step {{ onboardingStep === 2 ? 'step-active' : onboardingStep > 2 ? 'step-completed' : 'step-pending' }}">
+      <view class="step-indicator">
+        <view class="step-number">
+          <text wx:if="{{ onboardingStep > 2 }}">✓</text>
+          <text wx:else>2</text>
+        </view>
+      </view>
+      <view class="step-content">
+        <text class="step-title">Login with Google</text>
+        <text class="step-description">Connect your Google account for fast outreach.</text>
+      </view>
+      <button
+        wx:if="{{ onboardingStep === 2 }}"
+        class="step-btn"
+        bindtap="handleLogin"
+        loading="{{ authPolling }}"
+        disabled="{{ authPolling || !walletConnected }}"
+      >
+        <image class="step-btn-icon" src="{{ googleIcon }}" mode="aspectFit"></image>
+        {{ authPolling ? "Waiting..." : "Connect Google" }}
+      </button>
+      <view class="step-badge" wx:if="{{ onboardingStep > 2 }}">Done</view>
+    </view>
+
+    <!-- Step 3: Complete Profile -->
+    <view class="onboarding-step {{ onboardingStep === 3 ? 'step-active' : 'step-pending' }}">
+      <view class="step-indicator">
+        <view class="step-number">3</view>
+      </view>
+      <view class="step-content">
+        <text class="step-title">Complete Your Profile</text>
+        <text class="step-description">Let our AI analyze and discover your best opportunities.</text>
+      </view>
+      <button wx:if="{{ onboardingStep === 3 }}" class="step-btn" bindtap="goToProfileIntake" disabled="{{ !walletConnected }}">Get Started</button>
+    </view>
   </view>
 
-  <view class="actions-wrap" wx:if="{{ !showAuthCenter }}">
+  <view class="inline-loading" wx:if="{{ bootLoading || checkingProfile }}">
+    <view class="spinner"></view>
+    <text class="inline-loading-text">Checking your profile state...</text>
+  </view>
+
+  <view class="auth-progress-card" wx:if="{{ authPolling && onboardingStep !== 2 }}">
+    <text class="auth-progress-title">Google login in progress</text>
+    <text class="auth-progress-subtitle">Complete authentication in your browser and return here.</text>
+    <!-- <text class="auth-progress-code" wx:if="{{ authUserCode }}">Code: {{ authUserCode }}</text> -->
+    <button class="secondary-btn" wx:if="{{ authVerificationUrl }}" bindtap="copyAuthUrl">Copy Verification URL</button>
+  </view>
+
+  <view class="actions-wrap" wx:if="{{ !showOnboarding || onboardingStep >= 4 }}">
     <button
       class="secondary-btn action-row-btn"
       wx:if="{{ !walletConnected }}"
       bindtap="onConnectWallet"
       loading="{{ connectingWallet }}"
-      disabled="{{ connectingWallet }}"
+      disabled="{{ connectingWallet || bootLoading }}"
     >
       {{ connectingWallet ? "Connecting Wallet..." : "Connect Wallet" }}
     </button>
-    <button class="secondary-btn action-row-btn" wx:if="{{ walletConnected && !hasPhotographerProfile && !checkingProfile }}" bindtap="goToProfileIntake">
+    <button
+      class="secondary-btn action-row-btn"
+      wx:if="{{ walletConnected && !hasPhotographerProfile && !checkingProfile }}"
+      bindtap="goToProfileIntake"
+      disabled="{{ bootLoading }}"
+    >
       Complete Profile for Analysis
     </button>
-    <button class="secondary-btn action-row-btn" wx:if="{{ walletConnected && hasPhotographerProfile }}" bindtap="goToSuggestedOpportunities">
+    <button
+      class="secondary-btn action-row-btn"
+      wx:if="{{ walletConnected && hasPhotographerProfile }}"
+      bindtap="goToSuggestedOpportunities"
+      disabled="{{ bootLoading }}"
+    >
       View Suggested Opportunities
     </button>
-    <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects }}">
+    <!-- <button class="secondary-btn" bindtap="fetchRecentGmailSubjects" loading="{{ loadingGmailSubjects }}" disabled="{{ loadingGmailSubjects || !auth }}">
       {{ loadingGmailSubjects ? "Fetching Gmail Subjects..." : "Get Last 5 Gmail Subjects" }}
+    </button> -->
+  </view>
+
+  <view class="google-connect-card" wx:if="{{ !auth && onboardingStep !== 2 && !showOnboarding }}">
+    <text class="google-connect-title">Connect Google for fast outreach</text>
+    <text class="google-connect-subtitle">Send and save drafts directly from opportunities.</text>
+    <button class="google-connect-btn" bindtap="handleLogin" loading="{{ authPolling }}" disabled="{{ authPolling }}">
+      <image class="google-connect-icon" src="{{ googleIcon }}" mode="aspectFit"></image>
+      <text>{{ authPolling ? "Waiting for approval..." : "Connect Google" }}</text>
     </button>
   </view>
 
-  <view class="google-connect-card" wx:if="{{ !auth }}">
-    <text class="google-connect-title">Want to seamlessly contact employers?</text>
-    <text class="google-connect-subtitle">Connect your Google account to streamline outreach and follow-ups.</text>
-    <button class="google-connect-btn" bindtap="handleLogin">
-      <image class="google-connect-icon" src="{{ googleIcon }}" mode="aspectFit"></image>
-      <text>Connect</text>
-    </button>
+  <view class="google-connected" wx:if="{{ auth }}">
+    <text class="google-connected-text">Google account connected.</text>
+    <button class="secondary-btn" bindtap="handleLogout">Logout</button>
   </view>
-  <button class="secondary-btn" wx:if="{{ auth }}" bindtap="handleLogout">Logout</button>
 </view>

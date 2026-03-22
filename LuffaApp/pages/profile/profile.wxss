@@ -1,51 +1,115 @@
 .page {
   min-height: 100vh;
-  padding: 48rpx 32rpx 60rpx;
+  padding: 44rpx 24rpx 56rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 22rpx;
-  background: linear-gradient(155deg, #f8fbff 0%, #f3f7ff 50%, #fff9f1 100%);
+  gap: 18rpx;
+  background: #0a111d;
+  position: relative;
+  overflow: hidden;
 }
 
-.hero-card,
-.card {
-  width: 100%;
-  padding: 36rpx;
-  box-sizing: border-box;
-  border-radius: 24rpx;
-  background: #ffffff;
-  box-shadow: 0 10rpx 22rpx rgba(16, 24, 40, 0.08);
+button::after {
+  border: none;
+}
+
+.status-card,
+.loading-card,
+.error-card,
+.card,
+.empty-card {
+  position: relative;
+  z-index: 1;
+}
+
+.status-card {
+  border-radius: 14rpx;
+  border: 1rpx solid #2f6a78;
+  background: #11303f;
+  padding: 16rpx;
+}
+
+.status-text {
+  font-size: 22rpx;
+  color: #b8ecf5;
+}
+
+.loading-card {
+  border-radius: 14rpx;
+  border: 1rpx solid #365679;
+  background: #112135;
+  padding: 18rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.spinner {
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 999rpx;
+  border: 3rpx solid #6484b8;
+  border-top-color: #ebf5ff;
+  animation: spin 0.9s linear infinite;
+}
+
+.loading-text {
+  font-size: 23rpx;
+  color: #c4d6f2;
+}
+
+.error-card {
+  border-radius: 14rpx;
+  border: 1rpx solid #79363e;
+  background: #34171c;
+  padding: 18rpx;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
 }
 
-.title {
-  font-size: 46rpx;
-  font-weight: 700;
-  color: #182033;
+.error-text {
+  font-size: 22rpx;
+  color: #f6ccd2;
 }
 
-.subtitle {
-  font-size: 28rpx;
-  line-height: 1.5;
-  color: #4a5770;
+.card,
+.empty-card {
+  width: 100%;
+  padding: 26rpx;
+  box-sizing: border-box;
+  border-radius: 20rpx;
+  background: #111c2e;
+  border: 1rpx solid #2f496b;
+  box-shadow: 0 12rpx 28rpx rgba(1, 6, 14, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #e9f1ff;
+}
+
+.empty-subtitle {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: #b6c8e7;
 }
 
 .section-title {
   font-size: 30rpx;
-  font-weight: 600;
-  color: #182033;
-}
-
-.action-row {
-  display: flex;
-  gap: 16rpx;
+  font-weight: 700;
+  color: #e8f1ff;
 }
 
 .primary-btn,
-.secondary-btn {
+.secondary-btn,
+.secondary-button {
   border-radius: 14rpx;
 }
 
@@ -53,30 +117,25 @@
   width: 100%;
   margin: 0;
   font-size: 24rpx;
-  background: #0f2a57;
-  color: #ffffff;
+  background: #2e548e;
+  color: #f5f9ff;
 }
 
 .secondary-btn {
   width: 100%;
   margin: 0;
   font-size: 24rpx;
-  background: #ffffff;
-  border: 2rpx solid #0f2a57;
-  color: #0f2a57;
-}
-
-.error-text {
-  font-size: 24rpx;
-  color: #b42318;
+  background: #1a2c44;
+  border: 1rpx solid #3b5d84;
+  color: #d4e3fb;
 }
 
 .kv-row {
   display: flex;
   justify-content: space-between;
-  gap: 18rpx;
+  gap: 16rpx;
   padding: 10rpx 0;
-  border-bottom: 1rpx solid #edf1f6;
+  border-bottom: 1rpx solid #2a415f;
 }
 
 .kv-stack-row {
@@ -84,7 +143,7 @@
   flex-direction: column;
   gap: 10rpx;
   padding: 10rpx 0;
-  border-bottom: 1rpx solid #edf1f6;
+  border-bottom: 1rpx solid #2a415f;
 }
 
 .kv-stack-label {
@@ -98,14 +157,14 @@
 }
 
 .kv-key {
-  font-size: 26rpx;
-  color: #475467;
+  font-size: 24rpx;
+  color: #9bb2d7;
 }
 
 .kv-value {
   flex: 1;
-  font-size: 26rpx;
-  color: #182033;
+  font-size: 24rpx;
+  color: #e8f1ff;
   word-break: break-all;
   display: flex;
   align-items: center;
@@ -120,7 +179,7 @@
   width: 100%;
   display: flex;
   flex-direction: row;
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .refresh-row {
@@ -132,10 +191,9 @@
 .secondary-button {
   width: 100%;
   margin: 0;
-  border-radius: 16rpx;
-  background: #13294b;
-  border: 2rpx solid #13294b;
-  color: #ffffff;
+  background: #223b5e;
+  border: 1rpx solid #4a6f9a;
+  color: #e3eeff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,9 +201,6 @@
 
 .refresh-row-btn {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .button-half {
@@ -161,22 +216,20 @@
   display: inline-block;
   padding: 6rpx 14rpx;
   border-radius: 20rpx;
-  background: #e9f9ef;
-  color: #1d6b3b;
+  background: #235947;
+  color: #d8fdec;
   font-weight: 600;
-  font-size: 24rpx;
-  border: 1rpx solid #a9dfba;
+  font-size: 23rpx;
 }
 
 .tag-no {
   display: inline-block;
   padding: 6rpx 14rpx;
   border-radius: 20rpx;
-  background: #fff1f2;
-  color: #b42318;
+  background: #5b2f3a;
+  color: #ffdbe7;
   font-weight: 600;
-  font-size: 24rpx;
-  border: 1rpx solid #fda4af;
+  font-size: 23rpx;
 }
 
 .tags-container {
@@ -190,61 +243,63 @@
   display: inline-block;
   padding: 8rpx 16rpx;
   border-radius: 20rpx;
-  background: #13294b;
-  color: #ffffff;
+  background: #2c4f87;
+  color: #f3f8ff;
   font-weight: 600;
-  font-size: 24rpx;
-  border: 1rpx solid #0f2a57;
+  font-size: 23rpx;
 }
 
 .tag-secondary-niche {
   display: inline-block;
   padding: 8rpx 16rpx;
   border-radius: 20rpx;
-  background: #f1f5f9;
-  color: #475569;
+  background: #203349;
+  color: #c6d8f4;
   font-weight: 600;
-  font-size: 24rpx;
-  border: 1rpx solid #cbd5e1;
+  font-size: 23rpx;
+}
+
+.instagram-link,
+.email-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
 }
 
 .instagram-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  border: 1rpx solid #f1d2e8;
-  background: #fff5fb;
+  border: 1rpx solid #6b4870;
+  background: #2b1e32;
 }
 
-.instagram-icon {
-  width: 30rpx;
-  height: 30rpx;
+.instagram-icon,
+.email-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .instagram-handle {
-  color: #c13584;
+  color: #f0ccff;
   font-weight: 600;
 }
 
 .email-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  border: 1rpx solid #000000;
-  background: #ffffff;
-}
-
-.email-icon {
-  width: 30rpx;
-  height: 30rpx;
-  filter: grayscale(100%);
+  border: 1rpx solid #426180;
+  background: #15283e;
 }
 
 .email-text {
-  color: #111111;
+  color: #d9e7ff;
   font-weight: 600;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

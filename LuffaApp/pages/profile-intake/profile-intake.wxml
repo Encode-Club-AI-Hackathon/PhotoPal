@@ -1,9 +1,22 @@
 <view class="container profile-page">
-  <view class="profile-card">
+  <view class="loading-card" wx:if="{{pageLoading}}">
+    <view class="spinner"></view>
+    <text class="loading-text">Loading profile form...</text>
+  </view>
+
+  <view class="profile-card" wx:if="{{!pageLoading}}">
     <text class="title">{{editMode ? 'Edit Your Profile' : 'Complete Your Profile'}}</text>
     <text class="subtitle" wx:if="{{step === 'initial'}}">Start with Instagram and portfolio. We will research the rest automatically.</text>
     <text class="subtitle" wx:elif="{{step === 'confirm' && !editMode}}">Review the auto-filled details from the analyzer and confirm.</text>
     <text class="subtitle" wx:elif="{{step === 'confirm' && editMode}}">Update your profile details and save changes.</text>
+
+    <view class="status-card" wx:if="{{statusMessage}}">
+      <text class="status-text">{{statusMessage}}</text>
+    </view>
+
+    <view class="error-card" wx:if="{{errorMessage}}">
+      <text class="error-text">{{errorMessage}}</text>
+    </view>
 
     <block wx:if="{{step === 'initial' && !editMode}}">
       <view class="field">
@@ -74,7 +87,7 @@
       </view>
     </block>
 
-    <button class="submit-btn" bindtap="onSubmit" loading="{{submitting || saving}}" disabled="{{submitting || saving}}">
+    <button class="submit-btn" bindtap="onSubmit" loading="{{submitting || saving}}" disabled="{{submitting || saving || pageLoading}}">
       {{editMode ? (saving ? 'Saving...' : 'Save Changes') : (step === 'initial' ? (submitting ? 'Analyzing...' : 'Analyze Portfolio') : (saving ? 'Saving...' : 'Confirm Details'))}}
     </button>
   </view>

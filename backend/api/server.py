@@ -11,6 +11,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from api.routes.business_outreach import router as business_outreach_router
+from api.routes.business_matcher import router as business_matcher_router
+from api.routes.gmail_send import router as gmail_send_router
 from api.routes.lead_finder import router as lead_finder_router
 from api.routes.portfolio_analyser import router as portfolio_analyser_router
 from civic_auth import CivicAuth
@@ -86,6 +88,8 @@ config = {
 app.include_router(lead_finder_router)
 app.include_router(portfolio_analyser_router)
 app.include_router(business_outreach_router)
+app.include_router(business_matcher_router)
+app.include_router(gmail_send_router)
 
 civic_auth_dep, get_current_user, require_auth = create_auth_dependencies(config)
 

@@ -3,7 +3,20 @@
     <text class="settings-title">Settings</text>
     <text class="settings-subtitle">Manage your app preferences and account.</text>
 
-    <button class="settings-item" bindtap="goToProfile">
+    <view class="loading-card" wx:if="{{syncing}}">
+      <view class="spinner"></view>
+      <text class="loading-text">Syncing wallet state...</text>
+    </view>
+
+    <view class="status-card" wx:if="{{statusMessage && !syncing}}">
+      <text class="status-text">{{statusMessage}}</text>
+    </view>
+
+    <view class="error-card" wx:if="{{errorMessage && !syncing}}">
+      <text class="error-text">{{errorMessage}}</text>
+    </view>
+
+    <button class="settings-item" bindtap="goToProfile" disabled="{{syncing}}">
       <text class="item-label">Profile</text>
       <text class="item-arrow">›</text>
     </button>
@@ -38,10 +51,10 @@
         <text class="wallet-address">{{address}}</text>
       </view>
 
-      <button class="wallet-btn wallet-connect" wx:if="{{!connected}}" bindtap="onConnectWallet" loading="{{connecting}}" disabled="{{connecting}}">
+      <button class="wallet-btn wallet-connect" wx:if="{{!connected}}" bindtap="onConnectWallet" loading="{{connecting}}" disabled="{{connecting || syncing}}">
         {{connecting ? 'Connecting...' : 'Connect Wallet'}}
       </button>
-      <button class="wallet-btn wallet-disconnect" wx:if="{{connected}}" bindtap="onDisconnectWallet">Disconnect Wallet</button>
+      <button class="wallet-btn wallet-disconnect" wx:if="{{connected}}" bindtap="onDisconnectWallet" disabled="{{connecting || syncing}}">Disconnect Wallet</button>
     </view>
   </view>
 </view>

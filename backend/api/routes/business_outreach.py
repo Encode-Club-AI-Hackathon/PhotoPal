@@ -12,7 +12,7 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 class BusinessOutreachRequest(BaseModel):
     business_id: int = Field(..., description="businesses.id")
-    photographer_id: int = Field(..., description="photographer_profiles.photographer_id")
+    photographer_id: str = Field(..., description="photographer_profiles.photographer_id")
 
 
 @router.post("/business-outreach")

@@ -20,7 +20,7 @@ logging.getLogger("langchain_google_genai").setLevel(logging.ERROR)
 
 class OutreachDraft(BaseModel):
     business_id: int = Field(description="Foreign key ID to businesses table")
-    photographer_profile_id: int = Field(description="Foreign key ID to photographer_profiles table")
+    photographer_profile_id: str = Field(description="Foreign key ID to photographer_profiles table")
     research_summary: str = Field(description="Short summary of findings about the business and online presence")
     social_insights: List[str] = Field(default_factory=list, description="Specific insights from socials or public content")
     pain_points: List[str] = Field(default_factory=list, description="Likely marketing/content pain points")
@@ -56,15 +56,20 @@ def build_prompt(business: dict[str, Any], photographer_profile: dict[str, Any])
     location_city = photographer_profile.get("location_city")
     location_country = photographer_profile.get("location_country")
     travel = photographer_profile.get("willingness_to_travel")
+    photographer_website = photographer_profile.get("website_url")
+    photographer_instagram = photographer_profile.get("instagram_handle")
+    photographer_email = photographer_profile.get("contact_email")
 
     return (
         "Research this specific business deeply (website + socials + public presence), then write a tailored cold outreach email for the photographer below. "
         "Also rank fit quality for this photographer and explain why. "
         f"Business context: id={business_id}, name='{business_name}', type='{business_type}', website='{website}', notes_needs='{notes}'. "
         f"Photographer context: photographer_profile_id={photographer_profile_id}, name='{photographer_name}', primary_niche='{primary_niche}', "
-        f"secondary_niches={secondary_niches}, location_city='{location_city}', location_country='{location_country}', willingness_to_travel={travel}. "
+        f"secondary_niches={secondary_niches}, location_city='{location_city}', location_country='{location_country}', willingness_to_travel={travel}, "
+        f"website_url='{photographer_website}', instagram_handle='{photographer_instagram}', contact_email='{photographer_email}'. "
         "Output exactly one outreach draft row and keep `business_id` and `photographer_profile_id` unchanged from the provided context. "
         "Set `fit_score` between 0 and 100. "
+        "If including portfolio or contact links/details, use the real photographer profile values above; never output placeholders like '[Link to Portfolio]' or '[Your Email]'. "
         "Once complete, you MUST call submit_final_outreach_drafts with your final structured result."
     )
 

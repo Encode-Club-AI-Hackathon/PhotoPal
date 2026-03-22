@@ -1,9 +1,11 @@
 .container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 200rpx 0;
-    box-sizing: border-box;
-  }
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+page {
+  background: #0a111d;
+  color: #e8eefc;
+  font-family: "Avenir Next", "Poppins", "Segoe UI", sans-serif;
+}
