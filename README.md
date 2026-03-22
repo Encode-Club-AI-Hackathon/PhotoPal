@@ -387,13 +387,6 @@ Request:
 - The portfolio agent excludes store-save style tools that can fail in non-interactive backend sessions.
 - Main agent runner supports CLI execution via backend/agents/main.py for local testing.
 
-## Roadmap Ideas
-
-- Add ranking and recommendation logic per photographer.
-- Add email send integration and follow-up cadence tracking.
-- Move in-memory device sessions to Redis for production reliability.
-- Add tests for route contracts and agent result validation.
-
 ## References
 
 - [LuffaMiniApp_Template GitHub Repositroy](https://github.com/BabyBoss45/LuffaMiniApp_Template/tree/main)
