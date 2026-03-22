@@ -180,14 +180,14 @@ Page({
         this.syncWalletState();
         wx.showToast({ title: "Wallet connected", icon: "success" });
 
-        this.checkPhotographerProfile(wallet.uid || "", (exists) => {
-          if (exists) return;
-          setTimeout(() => {
-            wx.navigateTo({
-              url: "../profile-intake/profile-intake",
-            });
-          }, 350);
-        });
+        // this.checkPhotographerProfile(wallet.uid || "", (exists) => {
+        //   if (exists) return;
+        //   setTimeout(() => {
+        //     wx.navigateTo({
+        //       url: "../profile-intake/profile-intake",
+        //     });
+        //   }, 350);
+        // });
       })
       .catch((err) => {
         console.error("Connect wallet failed:", err);
