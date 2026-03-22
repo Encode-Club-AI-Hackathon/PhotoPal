@@ -26,6 +26,7 @@ Built on Luffa App and secured by Civic, the product combines a client experienc
 - [API Endpoints](#api-endpoints)
 - [Authentication Endpoints](#authentication-endpoints)
 - [Authentication Notes](#authentication-notes)
+- [Technical Limitations](#technical-limitations)
 - [References](#references)
 
 ## Why PhotoPal
@@ -403,16 +404,10 @@ Request:
 }
 ```
 
-## Authentication Endpoints
+## Custom Auth Solution Endpoints
 
 These endpoints are exposed by the backend auth server in addition to the `/agents/*` routes.
 
-### Civic Auth Flow
-
-- `GET /auth/login`: Start Civic OAuth login.
-- `GET /auth/callback`: Civic OAuth callback endpoint.
-- `GET /auth/logout`: Start Civic logout flow.
-- `GET /auth/logoutcallback`: Civic logout callback endpoint.
 - `GET /`: Returns tokens (and finalizes device session when applicable).
 
 ### Device Login Flow
@@ -440,9 +435,20 @@ Request:
 
 ## Authentication Notes
 
-- Backend supports Civic login, callback, logout, and device flow routes.
+- Logout is finalised client-side by removing the stored auth token and clearing the device session id.
 - Agent routes accept Bearer tokens and can exchange non-Civic subject tokens for Civic access tokens.
 - In local hackathon mode, a static CIVIC_TOKEN fallback is supported.
+
+## Technical Limitations
+
+- Luffa mini app navigation constraints: you cannot reliably deep-link/link users to websites or external applications outside the mini app container.
+- No DOM access or DOM manipulation: standard browser DOM patterns are unavailable in the mini app runtime.
+- Limited ecosystem compatibility: complex external packages are harder to use due to mini app runtime and bundling constraints.
+- Civic auth scope limitation for this use case: we could not pass all required scopes needed for both sending and receiving emails in the expected flow.
+- Civic tool API key UX gap: when a Civic tool has no API key configured, the flow asks for manual plain-text instructions and a link-based handoff; this would be better handled via an interceptable tool call.
+- Civic Python library maturity and documentation gap: docs are limited, and one relevant library release landed one day before the hackathon.
+- Civic guardrail management bug: adding a guardrail to a skill via the Civic web UI failed, and we had to use the AI chatbot as a workaround.
+
 
 ## References
 
