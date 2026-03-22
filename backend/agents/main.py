@@ -46,6 +46,95 @@ def set_single_row(table: str, key: str, value: Any, data: dict[str, Any]) -> di
 	return response.data
 
 
+def _normalize_text(value: Any) -> str:
+	return f"{value or ''}".strip().lower()
+
+
+def _to_niche_list(value: Any) -> list[str]:
+	if isinstance(value, list):
+		return [item.strip() for item in (f"{v}" for v in value) if item.strip()]
+	if isinstance(value, str):
+		parts = [item.strip() for item in value.split(',')]
+		return [item for item in parts if item]
+	return []
+
+
+def _distance_to_km(row: dict[str, Any]) -> float:
+	raw = row.get("distance")
+	if raw is None:
+		raw = row.get("distance_m")
+	if raw is None:
+		raw = row.get("distance_meters")
+	if raw is None:
+		return float("inf")
+	try:
+		meters = float(raw)
+	except (TypeError, ValueError):
+		return float("inf")
+	return meters / 1000.0
+
+
+def _rank_businesses(profile: dict[str, Any], businesses: list[dict[str, Any]]) -> list[dict[str, Any]]:
+	primary_niche = _normalize_text(profile.get("primary_niche"))
+	secondary_niches = {_normalize_text(item) for item in _to_niche_list(profile.get("secondary_niches"))}
+	secondary_niches = {item for item in secondary_niches if item}
+
+	ranked: list[dict[str, Any]] = []
+	for row in businesses:
+		business_type = _normalize_text(row.get("type"))
+		distance_km = _distance_to_km(row)
+
+		primary_match = bool(primary_niche and business_type == primary_niche)
+		secondary_match = bool(business_type and business_type in secondary_niches)
+		type_match = bool(primary_match or secondary_match)
+
+		niche_score = 60 if primary_match else 35 if secondary_match else 0
+		distance_score = max(0.0, 40.0 - min(distance_km, 40.0)) if distance_km != float("inf") else 0.0
+		match_score = round(niche_score + distance_score, 2)
+
+		if primary_match:
+			reason = "Primary niche and business type match"
+		elif secondary_match:
+			reason = "Secondary niche and business type match"
+		else:
+			reason = "Nearby business"
+
+		row["distance_km"] = None if distance_km == float("inf") else round(distance_km, 2)
+		row["primary_niche_match"] = primary_match
+		row["secondary_niche_match"] = secondary_match
+		row["business_type_match"] = type_match
+		row["match_score"] = match_score
+		row["match_reason"] = reason
+		ranked.append(row)
+
+	ranked.sort(key=lambda item: (-float(item.get("match_score", 0.0)), float(item.get("distance_km") or 10_000_000.0)))
+	return ranked
+
+
+def _call_suggest_businesses_rpc(photographer_id: Any, radius_meters: int, limit: int) -> list[dict[str, Any]]:
+	rpc_attempts = [
+		{"photographer_id": photographer_id, "search_radius_meters": radius_meters, "result_limit": limit},
+		{"photographer_id": photographer_id, "radius_meters": radius_meters, "limit_count": limit},
+		{"photographer_id": photographer_id, "radius_meters": radius_meters, "limit": limit},
+	]
+
+	last_error: Exception | None = None
+	for payload in rpc_attempts:
+		try:
+			response = supabase.rpc("suggest_businesses_for_photographer", payload).execute()
+			if isinstance(response.data, list):
+				return response.data
+			return []
+		except Exception as exc:
+			last_error = exc
+
+	error_detail = f" {last_error}" if last_error else ""
+	raise ValueError(
+		"Unable to query spatial matches. Ensure RPC 'suggest_businesses_for_photographer' exists and accepts photographer_id/radius/limit parameters."
+		+ error_detail
+	)
+
+
 async def run_and_store(
 	*,
 	create_agent: Callable[..., Awaitable[Any]],
@@ -120,36 +209,82 @@ async def run_and_store(
 	}
 
 
-async def run_lead_finder(profile_id: int, civic_access_token: str | None = None) -> dict[str, Any]:
-	try:
-		from .lead_finder import (
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-			TARGET_TABLE,
-		)
-	except ImportError:
-		from lead_finder import (  # type: ignore
-			create_agent,
-			build_prompt,
-			RESULTS_KEY,
-			SUBMIT_TOOL_NAME,
-			TARGET_TABLE,
-		)
+async def run_lead_finder(
+	profile_id: int | str,
+	civic_access_token: str | None = None,
+	radius_km: float = 20.0,
+	limit: int = 5,
+) -> dict[str, Any]:
+	del civic_access_token  # Lead finding now runs through DB spatial matching.
+
+	if radius_km <= 0:
+		raise ValueError("radius_km must be greater than 0")
+	if limit <= 0:
+		raise ValueError("limit must be greater than 0")
 
 	profile = get_single_row("photographer_profiles", "photographer_id", profile_id)
-	prompt = build_prompt(profile)
+	radius_meters = int(radius_km * 1000)
 
-	return await run_and_store(
-		create_agent=create_agent,
-		prompt=prompt,
-		submit_tool_name=SUBMIT_TOOL_NAME,
-		results_key=RESULTS_KEY,
-		target_table=TARGET_TABLE,
-		thread_id=f"lead-finder-session-{profile_id}",
-		civic_access_token=civic_access_token,
-	)
+	rows = _call_suggest_businesses_rpc(profile_id, radius_meters, limit)
+	if not rows:
+		return {
+			"ok": True,
+			"target_table": "businesses",
+			"inserted_count": 0,
+			"data": {
+				"photographer_id": profile_id,
+				"radius_km": radius_km,
+				"limit": limit,
+				"leads": [],
+				"matches": [],
+			},
+		}
+
+	# Backfill richer fields from businesses table when RPC returns minimal columns.
+	business_ids = [row.get("id") for row in rows if row.get("id") is not None]
+	business_lookup: dict[Any, dict[str, Any]] = {}
+	if business_ids:
+		biz_res = (
+			supabase.table("businesses")
+			.select("id,business_name,type,contact_name,email_address,phone_number,website,notes_needs,lon,lat")
+			.in_("id", business_ids)
+			.execute()
+		)
+		for business in biz_res.data or []:
+			business_lookup[business.get("id")] = business
+
+	merged_rows: list[dict[str, Any]] = []
+	for row in rows:
+		base = dict(row)
+		details = business_lookup.get(base.get("id"), {})
+		merged_rows.append({
+			"id": base.get("id"),
+			"business_name": base.get("business_name") or base.get("name") or details.get("business_name"),
+			"type": base.get("type") or details.get("type"),
+			"contact_name": base.get("contact_name") or details.get("contact_name"),
+			"email_address": base.get("email_address") or details.get("email_address"),
+			"phone_number": base.get("phone_number") or details.get("phone_number"),
+			"website": base.get("website") or details.get("website"),
+			"notes_needs": base.get("notes_needs") or details.get("notes_needs"),
+			"lon": base.get("lon") if base.get("lon") is not None else details.get("lon"),
+			"lat": base.get("lat") if base.get("lat") is not None else details.get("lat"),
+			"distance": base.get("distance") if base.get("distance") is not None else base.get("distance_m") or base.get("distance_meters"),
+		})
+
+	ranked = _rank_businesses(profile, merged_rows)
+
+	return {
+		"ok": True,
+		"target_table": "businesses",
+		"inserted_count": 0,
+		"data": {
+			"photographer_id": profile_id,
+			"radius_km": radius_km,
+			"limit": limit,
+			"leads": ranked[:limit],
+			"matches": ranked[:limit],
+		},
+	}
 
 
 async def run_portfolio_analyser(
